@@ -55,6 +55,16 @@ CREATE TABLE bill (
     FOREIGN KEY (user_id) REFERENCES auth_user(id)
 );
 
+CREATE TABLE likes (
+    id serial PRIMARY KEY,                           -- id
+    user_id integer NOT NULL,                        -- 用户id
+    ISBN character varying(255) NOT NULL,            -- ISBN
+    like_time timestamp NOT NULL,                    -- 收藏时间
+    -- foreign key
+    FOREIGN KEY (user_id) REFERENCES auth_user(id),
+    FOREIGN KEY (ISBN) REFERENCES books(ISBN)
+);
+
 -- insert superuser while creating the table
 INSERT INTO auth_user (username, password, is_superuser, first_name, last_name, email, staff_number, sex, age)
 VALUES ('ffa500', 'VwIK2qsXCGMJsNhX$fqiPYlimk1CyExpMX3WISZZ19iCbQlktoerWJIMqNLA=', true, 'jy', 's', 'ffa500@gmail.com', 205, 'M', 22);

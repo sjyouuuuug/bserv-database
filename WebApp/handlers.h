@@ -79,6 +79,12 @@ std::nullopt_t view_books(
     bserv::response_type& response,
     const std::string& page_num);
 
+std::nullopt_t view_comments(
+    std::shared_ptr<bserv::db_connection> conn,
+    std::shared_ptr<bserv::session_type> session_ptr,
+    bserv::response_type& response,
+    const std::string& page_num);
+
 std::nullopt_t view_bookstore(
     std::shared_ptr<bserv::db_connection> conn,
     std::shared_ptr<bserv::session_type> session_ptr,
@@ -120,6 +126,13 @@ std::nullopt_t form_add_order(
     std::shared_ptr<bserv::session_type> session_ptr);
 
 std::nullopt_t delete_book(
+    bserv::request_type& request,
+    bserv::response_type& response,
+    boost::json::object&& params,
+    std::shared_ptr<bserv::db_connection> conn,
+    std::shared_ptr<bserv::session_type> session_ptr);
+
+std::nullopt_t hit_like(
     bserv::request_type& request,
     bserv::response_type& response,
     boost::json::object&& params,
