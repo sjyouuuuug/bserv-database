@@ -58,6 +58,14 @@ bserv::db_relation_to_object orm_orders{
 	bserv::make_db_field<int>("order_status"), // 0: unpaid, 1: paid, 2: shipped, 3: received
 	bserv::make_db_field<int>("order_quantity")};
 
+bserv::db_relation_to_object orm_sale{
+	bserv::make_db_field<int>("id"),
+	bserv::make_db_field<std::string>("ISBN"),
+	bserv::make_db_field<std::string>("sale_time"),
+	bserv::make_db_field<int>("sale_quantity"),
+	bserv::make_db_field<float>("user_id")
+};
+
 std::optional<boost::json::object> get_user(
 	bserv::db_transaction &tx,
 	const boost::json::string &username)
