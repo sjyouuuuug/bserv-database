@@ -7,15 +7,16 @@
 
 #include "rendering.h"
 
-std::string get_current_time_as_string() {
-    std::time_t now = std::time(nullptr);
-    std::tm ltm;
-    localtime_s(&ltm, &now);
+std::string get_current_time_as_string()
+{
+	std::time_t now = std::time(nullptr);
+	std::tm ltm;
+	localtime_s(&ltm, &now);
 
-    std::stringstream ss;
-    ss << std::put_time(&ltm, "%Y-%m-%d %H:%M:%S"); 
+	std::stringstream ss;
+	ss << std::put_time(&ltm, "%Y-%m-%d %H:%M:%S");
 
-    return ss.str();
+	return ss.str();
 }
 
 // register an orm mapping (to convert the db query results into
@@ -63,8 +64,7 @@ bserv::db_relation_to_object orm_sale{
 	bserv::make_db_field<std::string>("ISBN"),
 	bserv::make_db_field<std::string>("sale_time"),
 	bserv::make_db_field<int>("sale_quantity"),
-	bserv::make_db_field<std::string>("user_id")
-};
+	bserv::make_db_field<std::string>("user_id")};
 
 std::optional<boost::json::object> get_user(
 	bserv::db_transaction &tx,
@@ -285,6 +285,53 @@ boost::json::object book_register(
 	return {
 		{"success", true},
 		{"message", "books added"}};
+}
+
+boost::json::object compute_total_income_and_expenditure(
+	bserv::request_type &request,
+	// the json object is obtained from the request body,
+	// as well as the url parameters
+	boost::json::object &&params,
+	std::shared_ptr<bserv::db_connection> conn)
+{
+	if (request.method() != boost::beast::http::verb::post)
+	{
+		throw bserv::url_not_found_exception{};
+	}
+
+	bserv::db_transaction tx{conn};
+
+	bserv::db_result db_res = tx.exec("SELECT "
+									  "(ts.sales_total - tp.purchase_total) AS total_income_and_expenditure "
+									  "FROM "
+									  "( "
+									  "    SELECT SUM(o.order_quantity * b.price) AS purchase_total "
+									  "    FROM orders o "
+									  "    JOIN books b ON o.ISBN = b.ISBN "
+									  "    WHERE o.order_status = 2 "
+									  ") AS tp, "
+									  "( "
+									  "    SELECT SUM(s.sale_quantity * b.retail_price) AS sales_total "
+									  "    FROM sale s "
+									  "    JOIN books b ON s.ISBN = b.ISBN "
+									  ") AS ts;");
+
+	double total = (*db_res.begin())[0].as<double>();
+	std::string message;
+	if (total < 0)
+	{
+		message = "Oops! You have to work hard to make profit!\n";
+		message += "Total income and expenditure: " + std::to_string(total);
+	}
+	else
+	{
+		message = "Congratulations! You have made profit!\n";
+		message += "Total income and expenditure: " + std::to_string(total);
+	}
+
+	return {
+		{"success", true},
+		{"message", message}};
 }
 
 boost::json::object user_login(
@@ -918,6 +965,17 @@ std::nullopt_t form_add_book(
 	return redirect_to_books(conn, session_ptr, response, 1, std::move(context));
 }
 
+std::nullopt_t get_total_income_and_expenditure(
+	bserv::request_type &request,
+	bserv::response_type &response,
+	boost::json::object &&params,
+	std::shared_ptr<bserv::db_connection> conn,
+	std::shared_ptr<bserv::session_type> session_ptr)
+{
+	boost::json::object context = compute_total_income_and_expenditure(request, std::move(params), conn);
+	return redirect_to_sale(conn, session_ptr, response, 1, std::move(context));
+}
+
 // TODO: implement order_register function
 std::nullopt_t form_add_order(
 	bserv::request_type &request,
@@ -1278,7 +1336,6 @@ std::nullopt_t redirect_to_search_bookstore(
 	context["books"] = json_lists;
 	return index("bookstore.html", session_ptr, response, context);
 }
-
 
 std::nullopt_t view_search(
 	std::shared_ptr<bserv::db_connection> conn,

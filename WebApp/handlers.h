@@ -105,6 +105,13 @@ std::nullopt_t form_add_book(
     std::shared_ptr<bserv::db_connection> conn,
     std::shared_ptr<bserv::session_type> session_ptr);
 
+std::nullopt_t get_total_income_and_expenditure(
+    bserv::request_type& request,
+    bserv::response_type& response,
+    boost::json::object&& params,
+    std::shared_ptr<bserv::db_connection> conn,
+    std::shared_ptr<bserv::session_type> session_ptr);
+
 std::nullopt_t form_add_order(
     bserv::request_type& request,
     bserv::response_type& response,
