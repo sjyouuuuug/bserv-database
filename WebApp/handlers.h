@@ -147,3 +147,8 @@ std::nullopt_t view_search_bookstore(
     boost::json::object&& params,
     const std::string& page_num);
 
+std::nullopt_t view_sale(
+    std::shared_ptr<bserv::db_connection> conn,
+    std::shared_ptr<bserv::session_type> session_ptr,
+    bserv::response_type& response,
+    const std::string& page_num);

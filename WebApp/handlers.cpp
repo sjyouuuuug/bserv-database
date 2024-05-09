@@ -63,7 +63,7 @@ bserv::db_relation_to_object orm_sale{
 	bserv::make_db_field<std::string>("ISBN"),
 	bserv::make_db_field<std::string>("sale_time"),
 	bserv::make_db_field<int>("sale_quantity"),
-	bserv::make_db_field<float>("user_id")
+	bserv::make_db_field<std::string>("user_id")
 };
 
 std::optional<boost::json::object> get_user(
@@ -619,6 +619,80 @@ std::nullopt_t redirect_to_orders(
 	return index("orders.html", session_ptr, response, context);
 }
 
+std::nullopt_t redirect_to_sale(
+	std::shared_ptr<bserv::db_connection> conn,
+	std::shared_ptr<bserv::session_type> session_ptr,
+	bserv::response_type &response,
+	int page_id,
+	boost::json::object &&context)
+{
+	lgdebug << "view orders: " << page_id << std::endl;
+	bserv::db_transaction tx{conn};
+	bserv::db_result db_res = tx.exec("select count(*) from sale;");
+	lginfo << db_res.query();
+	std::size_t total_users = (*db_res.begin())[0].as<std::size_t>();
+	lgdebug << "total sales: " << total_users << std::endl;
+	int total_pages = (int)total_users / 10;
+	if (total_users % 10 != 0)
+		++total_pages;
+	lgdebug << "total pages: " << total_pages << std::endl;
+	db_res = tx.exec("select * from sale limit 10 offset ?;", (page_id - 1) * 10);
+	lginfo << db_res.query();
+	auto sales = orm_sale.convert_to_vector(db_res);
+	boost::json::array json_users;
+	for (auto &sale : sales)
+	{
+		json_users.push_back(sale);
+	}
+	boost::json::object pagination;
+	if (total_pages != 0)
+	{
+		pagination["total"] = total_pages;
+		if (page_id > 1)
+		{
+			pagination["previous"] = page_id - 1;
+		}
+		if (page_id < total_pages)
+		{
+			pagination["next"] = page_id + 1;
+		}
+		int lower = page_id - 3;
+		int upper = page_id + 3;
+		if (page_id - 3 > 2)
+		{
+			pagination["left_ellipsis"] = true;
+		}
+		else
+		{
+			lower = 1;
+		}
+		if (page_id + 3 < total_pages - 1)
+		{
+			pagination["right_ellipsis"] = true;
+		}
+		else
+		{
+			upper = total_pages;
+		}
+		pagination["current"] = page_id;
+		boost::json::array pages_left;
+		for (int i = lower; i < page_id; ++i)
+		{
+			pages_left.push_back(i);
+		}
+		pagination["pages_left"] = pages_left;
+		boost::json::array pages_right;
+		for (int i = page_id + 1; i <= upper; ++i)
+		{
+			pages_right.push_back(i);
+		}
+		pagination["pages_right"] = pages_right;
+		context["pagination"] = pagination;
+	}
+	context["sales"] = json_users;
+	return index("sale.html", session_ptr, response, context);
+}
+
 std::nullopt_t redirect_to_books(
 	std::shared_ptr<bserv::db_connection> conn,
 	std::shared_ptr<bserv::session_type> session_ptr,
@@ -789,6 +863,17 @@ std::nullopt_t view_orders(
 	return redirect_to_orders(conn, session_ptr, response, page_id, std::move(context));
 }
 
+std::nullopt_t view_sale(
+	std::shared_ptr<bserv::db_connection> conn,
+	std::shared_ptr<bserv::session_type> session_ptr,
+	bserv::response_type &response,
+	const std::string &page_num)
+{
+	int page_id = std::stoi(page_num);
+	boost::json::object context;
+	return redirect_to_sale(conn, session_ptr, response, page_id, std::move(context));
+}
+
 std::nullopt_t view_books(
 	std::shared_ptr<bserv::db_connection> conn,
 	std::shared_ptr<bserv::session_type> session_ptr,
@@ -920,16 +1005,15 @@ boost::json::object book_purchase(
 
 	std::string cur_time = get_current_time_as_string();
 
-	// bserv::db_result r2 = tx.exec(
-	// 	"insert into ?"
-	// 	"(user_id, ISBN, order_time, order_status, order_quantity) values"
-	// 	"(?, ?, ?, ?, ?)",
-	// 	bserv::db_name("orders"),
-	// 	get_or_empty(params, "userid"),
-	// 	get_or_empty(params, "ISBN"),
-	// 	cur_time,
-	// 	2,
-	// 	get_or_empty(params, "quantity"));
+	bserv::db_result r2 = tx.exec(
+		"insert into ?"
+		"(user_id, ISBN, sale_time, sale_quantity) values"
+		"(?, ?, ?, ?)",
+		bserv::db_name("sale"),
+		get_or_empty(params, "userid"),
+		get_or_empty(params, "ISBN"),
+		cur_time,
+		get_or_empty(params, "quantity"));
 
 	lginfo << r.query();
 	// lginfo << r2.query();

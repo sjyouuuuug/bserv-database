@@ -18,7 +18,8 @@ CREATE TABLE books (
     author character varying(255) NOT NULL,          -- 作者
     publisher character varying(255) NOT NULL,       -- 出版社
     price numeric(6, 2) NOT NULL,                    -- 价格
-    inventory integer DEFAULT 1                      -- 库存
+    inventory integer DEFAULT 1,                     -- 库存
+    retail_price numeric(6, 2) NOT NULL,             -- 零售价
 );
 
 CREATE TABLE orders (
@@ -61,26 +62,35 @@ VALUES ('ffa500', 'VwIK2qsXCGMJsNhX$fqiPYlimk1CyExpMX3WISZZ19iCbQlktoerWJIMqNLA=
 INSERT INTO auth_user (username, password, is_superuser, first_name, last_name, email, staff_number, sex, age)
 VALUES ('ljq', 'VwIK2qsXCGMJsNhX$fqiPYlimk1CyExpMX3WISZZ19iCbQlktoerWJIMqNLA=', true, 'jq', 'l', 'leng@gmail.com', 106, 'M', 22);
 
-INSERT INTO books (ISBN, title, author, publisher, price, inventory) VALUES 
-('978-0-12-958837-5', 'Much Congress especially.', 'Xavier Knox', 'Yang, Wood and Perry', 95.77, 82),
-('978-0-12-205846-2', 'Imagine per history some.', 'Jeremy King', 'Frank LLC', 65.29, 24),
-('978-1-165-36536-4', 'White.', 'Kelly Robbins', 'Lang, Schmitt and Perez', 36.47, 58),
-('978-0-412-40900-4', 'Born plant.', 'Tracey Perez', 'Hill-Hall', 86.59, 26),
-('978-1-280-20043-4', 'Chance explain rest sport century president.', 'Victoria Chase', 'Ward, Nguyen and Barton', 55.5, 15),
-('978-1-77923-206-9', 'Including explain learn.', 'Michael Davis', 'Wu, Anderson and Anderson', 73.75, 17),
-('978-0-598-94901-1', 'Already assume buy event difficult less.', 'Daniel Lewis', 'Rodriguez Group', 64.76, 79),
-('978-1-65621-414-0', 'For near executive record.', 'Kenneth Nelson', 'Howard, Chapman and Fisher', 82.75, 49),
-('978-0-02-204827-3', 'Change officer young.', 'Jessica Guerra', 'Martinez PLC', 12.74, 67),
-('978-0-414-89384-9', 'Wife song name finally.', 'Michael Hernandez', 'Mcguire-Davis', 71.24, 70);
+INSERT INTO books (ISBN, title, author, publisher, price, inventory, retail_price) VALUES
+('978-0-06-112008-4', 'To Kill a Mockingbird', 'Harper Lee', 'J.B. Lippincott & Co.', 18.99, 12, 24.99),
+('978-0-7432-7356-5', 'The Great Gatsby', 'F. Scott Fitzgerald', 'Scribner', 14.99, 15, 19.99),
+('978-0-452-28423-4', '1984', 'George Orwell', 'Penguin Books', 16.99, 8, 21.99),
+('978-0-06-085052-4', 'Brave New World', 'Aldous Huxley', 'Harper Perennial', 15.99, 10, 20.99),
+('978-0-14-017739-8', 'Of Mice and Men', 'John Steinbeck', 'Penguin Books', 13.99, 18, 17.99),
+('978-0-14-303943-3', 'The Catcher in the Rye', 'J.D. Salinger', 'Little, Brown and Company', 17.99, 9, 22.99),
+('978-0-452-28425-8', 'Animal Farm', 'George Orwell', 'Penguin Books', 15.99, 20, 20.99),
+('978-0-06-112241-5', 'The Road', 'Cormac McCarthy', 'Vintage', 17.99, 14, 21.99),
+('978-0-7432-7357-2', 'Moby-Dick', 'Herman Melville', 'Harper & Brothers', 19.99, 5, 25.99),
+('978-0-14-028333-4', 'Pride and Prejudice', 'Jane Austen', 'Modern Library', 12.99, 22, 16.99),
+('978-0-14-028329-7', 'Wuthering Heights', 'Emily Brontë', 'Penguin Books', 14.99, 18, 19.99),
+('978-0-7432-7358-9', 'Jane Eyre', 'Charlotte Brontë', 'Penguin Books', 16.99, 7, 21.99),
+('978-0-14-144236-4', 'Great Expectations', 'Charles Dickens', 'Penguin Classics', 18.99, 12, 24.99),
+('978-0-679-73232-2', 'Crime and Punishment', 'Fyodor Dostoevsky', 'Vintage', 17.99, 15, 22.99),
+('978-0-06-093546-7', 'East of Eden', 'John Steinbeck', 'Penguin Books', 19.99, 13, 25.99),
+('978-0-14-243720-9', 'Les Misérables', 'Victor Hugo', 'Modern Library', 22.99, 11, 28.99),
+('978-0-451-52990-4', 'Anna Karenina', 'Leo Tolstoy', 'Modern Library', 20.99, 16, 26.99),
+('978-0-679-74558-1', 'War and Peace', 'Leo Tolstoy', 'Penguin Classics', 24.99, 20, 30.99),
+('978-0-374-53315-0', 'One Hundred Years of Solitude', 'Gabriel Garcia Marquez', 'Harper & Row', 21.99, 9, 27.99),
+('978-0-679-72232-3', 'The Brothers Karamazov', 'Fyodor Dostoevsky', 'Vintage', 23.99, 12, 29.99),
+('978-0-385-74264-4', 'A Tale of Two Cities', 'Charles Dickens', 'Penguin Classics', 18.99, 10, 24.99),
+('978-0-14-018639-0', 'Don Quixote', 'Miguel de Cervantes', 'Penguin Classics', 20.99, 17, 26.99),
+('978-0-393-32502-3', 'Madame Bovary', 'Gustave Flaubert', 'Penguin Books', 19.99, 8, 24.99),
+('978-0-14-303999-0', 'Lolita', 'Vladimir Nabokov', 'Vintage', 17.99, 21, 22.99),
+('978-0-06-083867-4', 'Invisible Man', 'Ralph Ellison', 'Vintage', 19.99, 7, 24.99),
+('978-0-14-310627-2', 'Beloved', 'Toni Morrison', 'Vintage', 18.99, 19, 23.99),
+('978-0-679-73232-3', 'Catch-22', 'Joseph Heller', 'Simon & Schuster', 21.99, 13, 27.99),
+('978-0-14-118993-0', 'Ulysses', 'James Joyce', 'Penguin Classics', 23.99, 11, 28.99),
+('978-0-393-32500-9', 'Slaughterhouse-Five', 'Kurt Vonnegut', 'Modern Library', 18.99, 16, 24.99),
+('978-0-14-017739-9', 'Gone with the Wind', 'Margaret Mitchell', 'Macmillan', 24.99, 15, 30.99);
 
-INSERT INTO books (ISBN, title, author, publisher, price, inventory) VALUES 
-('978-0-457-78570-5', 'Order it.', 'Molly Lopez', 'Lowe LLC', 34.1, 13),
-('978-1-58403-234-2', 'Occur character weight.', 'Alyssa Phillips', 'Briggs, Miller and Gaines', 20.84, 53),
-('978-1-253-68360-8', 'Wonder.', 'Dwayne Johnson', 'Ross, Gonzalez and Johnson', 69.62, 46),
-('978-0-339-28906-2', 'People plant so modern.', 'Randy Noble', 'Johnson, Figueroa and Martinez', 44.11, 82),
-('978-0-406-01384-2', 'We team.', 'Jessica Espinoza', 'Bowers and Sons', 16.86, 60),
-('978-0-281-20695-7', 'Popular.', 'Thomas Turner', 'Johnson, Reeves and Shaw', 28.49, 3),
-('978-1-58258-048-7', 'Even man friend read arm.', 'Robin Smith', 'Mendez and Sons', 42.89, 63),
-('978-1-01-048857-6', 'Current beat bar compare.', 'Olivia Ayala', 'Petersen Group', 36.09, 20),
-('978-0-656-84905-5', 'Style would.', 'John Wright', 'Duncan, Martinez and Barrett', 81.66, 95),
-('978-1-57683-435-0', 'Part of human.', 'Nancy Hall', 'Jones-Ortega', 26.32, 37);
