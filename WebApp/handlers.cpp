@@ -554,7 +554,7 @@ std::nullopt_t redirect_to_orders(
 	if (total_users % 10 != 0)
 		++total_pages;
 	lgdebug << "total pages: " << total_pages << std::endl;
-	db_res = tx.exec("select * from orders limit 10 offset ?;", (page_id - 1) * 10);
+	db_res = tx.exec("select * from orders order by ISBN ASC limit 10 offset ?;", (page_id - 1) * 10);
 	lginfo << db_res.query();
 	auto orders = orm_orders.convert_to_vector(db_res);
 	boost::json::array json_users;
@@ -628,7 +628,7 @@ std::nullopt_t redirect_to_books(
 	if (total_users % 10 != 0)
 		++total_pages;
 	lgdebug << "total pages: " << total_pages << std::endl;
-	db_res = tx.exec("select * from books limit 10 offset ?;", (page_id - 1) * 10);
+	db_res = tx.exec("select * from books order by ISBN ASC limit 10 offset ?;", (page_id - 1) * 10);
 	lginfo << db_res.query();
 	auto books = orm_books.convert_to_vector(db_res);
 	boost::json::array json_users;
@@ -702,7 +702,7 @@ std::nullopt_t redirect_to_bookstore(
 	if (total_users % 10 != 0)
 		++total_pages;
 	lgdebug << "total pages: " << total_pages << std::endl;
-	db_res = tx.exec("select * from books limit 10 offset ?;", (page_id - 1) * 10);
+	db_res = tx.exec("select * from books order by ISBN ASC limit 10 offset ?;", (page_id - 1) * 10);
 	lginfo << db_res.query();
 	auto books = orm_books.convert_to_vector(db_res);
 	boost::json::array json_users;
@@ -870,7 +870,7 @@ boost::json::object book_delete(
 		{"message", "book deleted"}};
 }
 
-boost::json::object book_restock(
+boost::json::object book_purchase(
 	bserv::request_type &request,
 	boost::json::object &&params,
 	std::shared_ptr<bserv::db_connection> conn)
@@ -898,11 +898,66 @@ boost::json::object book_restock(
 			{"success", false},
 			{"message", "`userid` is required"}};
 	}
-	if (params.count("restockTime") == 0)
+
+	auto ISBN = params["ISBN"].as_string();
+	bserv::db_transaction tx{conn};
+
+	bserv::db_result r = tx.exec(
+		"update ?"
+		"set inventory=inventory-?"
+		"where ISBN=? ",
+		bserv::db_name("books"),
+		get_or_empty(params, "quantity"),
+		get_or_empty(params, "ISBN"));
+
+	std::string cur_time = get_current_time_as_string();
+
+	// bserv::db_result r2 = tx.exec(
+	// 	"insert into ?"
+	// 	"(user_id, ISBN, order_time, order_status, order_quantity) values"
+	// 	"(?, ?, ?, ?, ?)",
+	// 	bserv::db_name("orders"),
+	// 	get_or_empty(params, "userid"),
+	// 	get_or_empty(params, "ISBN"),
+	// 	cur_time,
+	// 	2,
+	// 	get_or_empty(params, "quantity"));
+
+	lginfo << r.query();
+	// lginfo << r2.query();
+	tx.commit(); // you must manually commit changes
+	return {
+		{"success", true},
+		{"message", "book purchased"}};
+}
+
+boost::json::object book_restock(
+	bserv::request_type &request,
+	boost::json::object &&params,
+	std::shared_ptr<bserv::db_connection> conn)
+{
+	if (request.method() != boost::beast::http::verb::post)
+	{
+		throw bserv::url_not_found_exception{};
+	}
+
+	if (params.count("ISBN") == 0)
 	{
 		return {
 			{"success", false},
-			{"message", "`restockTime` is required"}};
+			{"message", "`ISBN` is required"}};
+	}
+	if (params.count("quantity") == 0)
+	{
+		return {
+			{"success", false},
+			{"message", "`quantity` is required"}};
+	}
+	if (params.count("userid") == 0)
+	{
+		return {
+			{"success", false},
+			{"message", "`userid` is required"}};
 	}
 
 	auto ISBN = params["ISBN"].as_string();
@@ -948,6 +1003,17 @@ std::nullopt_t delete_book(
 	return redirect_to_books(conn, session_ptr, response, 1, std::move(context));
 }
 
+std::nullopt_t purchase_book(
+	bserv::request_type &request,
+	bserv::response_type &response,
+	boost::json::object &&params,
+	std::shared_ptr<bserv::db_connection> conn,
+	std::shared_ptr<bserv::session_type> session_ptr)
+{
+	boost::json::object context = book_purchase(request, std::move(params), conn);
+	return redirect_to_bookstore(conn, session_ptr, response, 1, std::move(context));
+}
+
 std::nullopt_t restock_book(
 	bserv::request_type &request,
 	bserv::response_type &response,
@@ -968,8 +1034,9 @@ std::nullopt_t redirect_to_search(
 	boost::json::object &&params)
 {
 	lgdebug << "view users: " << page_id << std::endl;
+	auto search_str = boost::json::value_to<std::string>(params.at("search"));
 	bserv::db_transaction tx{conn};
-	bserv::db_result db_res = tx.exec("select count(*) from books ;");
+	bserv::db_result db_res = tx.exec("select count(*) from books where title like ?;", "%" + search_str + "%");
 	lginfo << db_res.query();
 	std::size_t total_users = (*db_res.begin())[0].as<std::size_t>();
 	lgdebug << "total users: " << total_users << std::endl;
@@ -978,9 +1045,8 @@ std::nullopt_t redirect_to_search(
 		++total_pages;
 	lgdebug << "total pages: " << total_pages << std::endl;
 
-	auto search_str = boost::json::value_to<std::string>(params.at("search"));
 	db_res = tx.exec(
-		"select * from books where title like ? limit 10 offset ? ;",
+		"select * from books where title like ? order by ISBN ASC limit 10 offset ? ;",
 		"%" + search_str + "%",
 		(page_id - 1) * 10);
 
@@ -1040,6 +1106,88 @@ std::nullopt_t redirect_to_search(
 	return index("books.html", session_ptr, response, context);
 }
 
+std::nullopt_t redirect_to_search_bookstore(
+	std::shared_ptr<bserv::db_connection> conn,
+	std::shared_ptr<bserv::session_type> session_ptr,
+	bserv::response_type &response,
+	int page_id,
+	boost::json::object &&context,
+	boost::json::object &&params)
+{
+	lgdebug << "view users: " << page_id << std::endl;
+	auto search_str = boost::json::value_to<std::string>(params.at("search"));
+	bserv::db_transaction tx{conn};
+	bserv::db_result db_res = tx.exec("select count(*) from books where title like ?;", "%" + search_str + "%");
+	lginfo << db_res.query();
+	std::size_t total_users = (*db_res.begin())[0].as<std::size_t>();
+	lgdebug << "total users: " << total_users << std::endl;
+	int total_pages = (int)total_users / 10;
+	if (total_users % 10 != 0)
+		++total_pages;
+	lgdebug << "total pages: " << total_pages << std::endl;
+
+	db_res = tx.exec(
+		"select * from books where title like ? order by ISBN ASC limit 10 offset ? ;",
+		"%" + search_str + "%",
+		(page_id - 1) * 10);
+
+	lginfo << db_res.query();
+	auto lists = orm_books.convert_to_vector(db_res);
+	boost::json::array json_lists;
+	for (auto &list : lists)
+	{
+		json_lists.push_back(list);
+	}
+	boost::json::object pagination;
+	if (total_pages != 0)
+	{
+		pagination["total"] = total_pages;
+		if (page_id > 1)
+		{
+			pagination["previous"] = page_id - 1;
+		}
+		if (page_id < total_pages)
+		{
+			pagination["next"] = page_id + 1;
+		}
+		int lower = page_id - 3;
+		int upper = page_id + 3;
+		if (page_id - 3 > 2)
+		{
+			pagination["left_ellipsis"] = true;
+		}
+		else
+		{
+			lower = 1;
+		}
+		if (page_id + 3 < total_pages - 1)
+		{
+			pagination["right_ellipsis"] = true;
+		}
+		else
+		{
+			upper = total_pages;
+		}
+		pagination["current"] = page_id;
+		boost::json::array pages_left;
+		for (int i = lower; i < page_id; ++i)
+		{
+			pages_left.push_back(i);
+		}
+		pagination["pages_left"] = pages_left;
+		boost::json::array pages_right;
+		for (int i = page_id + 1; i <= upper; ++i)
+		{
+			pages_right.push_back(i);
+		}
+		pagination["pages_right"] = pages_right;
+		context["pagination"] = pagination;
+	}
+	context["books"] = json_lists;
+	return index("bookstore.html", session_ptr, response, context);
+}
+
+
 std::nullopt_t view_search(
 	std::shared_ptr<bserv::db_connection> conn,
 	std::shared_ptr<bserv::session_type> session_ptr,
@@ -1050,4 +1198,16 @@ std::nullopt_t view_search(
 	int page_id = std::stoi(page_num);
 	boost::json::object context;
 	return redirect_to_search(conn, session_ptr, response, page_id, std::move(context), std::move(params));
+}
+
+std::nullopt_t view_search_bookstore(
+	std::shared_ptr<bserv::db_connection> conn,
+	std::shared_ptr<bserv::session_type> session_ptr,
+	bserv::response_type &response,
+	boost::json::object &&params,
+	const std::string &page_num)
+{
+	int page_id = std::stoi(page_num);
+	boost::json::object context;
+	return redirect_to_search_bookstore(conn, session_ptr, response, page_id, std::move(context), std::move(params));
 }
