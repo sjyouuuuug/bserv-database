@@ -48,7 +48,7 @@
           </div>
           <div class="mb-3">
             <label for="quantity" class="form-label">Quantity</label>
-            <input type="number" class="form-control" id="quantity" name="quantity" placeholder="quantity">
+            <input type="number" class="form-control" id="quantity" name="quantity" placeholder="quantity" min="1" required>
           </div>
         </div>
         <div class="modal-footer">
@@ -57,6 +57,41 @@
         </div>
       </form>
       {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Donate Modal -->
+<div class="modal fade" id="donateModal" tabindex="-1" aria-labelledby="donateModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="/donate_book">
+        <div class="modal-header">
+          <h5 class="modal-title" id="donateModalLabel">Donate Book</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="donateISBN" name="ISBN">
+          <input type="hidden" id="donateLibraryName" name="library_name">
+          <input type="hidden" name="userid" value="{{ user.id }}">
+          <div class="mb-3">
+            <label for="library" class="form-label">Library</label>
+            <select class="form-select" id="library" name="library" required>
+              {% for library in libraries %}
+              <option value="{{ library.id }}">{{ library.library_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="donateQuantity" class="form-label">Quantity</label>
+            <input type="number" class="form-control" id="donateQuantity" name="quantity" min="1" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Donate</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
@@ -93,6 +128,7 @@
       <td>
         <input type="hidden" name="ISBN" value="{{ book.ISBN }}">
         <button class="btn btn-warning" type="button" data-toggle="modal" data-target="#restockModal" onclick="openRestockModal('{{ book.ISBN }}')">Restock</button>
+        <button class="btn btn-success" type="button" data-toggle="modal" data-target="#donateModal" onclick="openDonateModal('{{ book.ISBN }}')">Donate</button>
       </td>
       {% else %}
       <td><button class="btn btn-primary" type="button" disabled>No Permission</button></td>
@@ -132,16 +168,23 @@
 </div>
 
 <script>
-function openRestockModal(isbn) {
-  document.getElementById("restockISBN").value = isbn;
-  $('#restockModal').modal('show');
-}
-
-function updateRestockTime() {
-  // Set the current timestamp in ISO format
-  var now = new Date().toISOString();
-  document.getElementById("restockTime").value = now;
-}
+  function openRestockModal(ISBN) {
+    document.getElementById('restockISBN').value = ISBN;
+  }
+  
+  function openDonateModal(ISBN) {
+    document.getElementById('donateISBN').value = ISBN;
+  
+    // Update hidden field with the currently selected library name
+    const librarySelect = document.getElementById('library');
+    const selectedLibraryName = librarySelect.options[librarySelect.selectedIndex].text;
+    document.getElementById('donateLibraryName').value = selectedLibraryName;
+  }
+  
+  document.getElementById('library').addEventListener('change', function() {
+    const selectedLibraryName = this.options[this.selectedIndex].text;
+    document.getElementById('donateLibraryName').value = selectedLibraryName;
+  });
 </script>
 
 <!-- Bootstrap Modal Scripts (Ensure jQuery is included) -->

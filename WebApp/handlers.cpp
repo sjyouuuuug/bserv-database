@@ -375,6 +375,33 @@ boost::json::object compute_total_income_and_expenditure(
 		{"message", message}};
 }
 
+boost::json::object compute_social_prestige(
+	bserv::request_type &request,
+	// the json object is obtained from the request body,
+	// as well as the url parameters
+	boost::json::object &&params,
+	std::shared_ptr<bserv::db_connection> conn)
+{
+	if (request.method() != boost::beast::http::verb::post)
+	{
+		throw bserv::url_not_found_exception{};
+	}
+
+	bserv::db_transaction tx{conn};
+
+	bserv::db_result db_res = tx.exec("SELECT SUM(d.num * l.social_prestige_per_book) AS total_social_prestige "
+									  "FROM donation d "
+									  "JOIN libraries l ON d.library_id = l.id;");
+
+	double total = (*db_res.begin())[0].as<double>();
+	std::string message;
+	message = "You have gained " + std::to_string(total) + " social prestige points!";
+
+	return {
+		{"success", true},
+		{"message", message}};
+}
+
 boost::json::object user_login(
 	bserv::request_type &request,
 	boost::json::object &&params,
@@ -873,12 +900,18 @@ std::nullopt_t redirect_to_books(
 		++total_pages;
 	lgdebug << "total pages: " << total_pages << std::endl;
 	db_res = tx.exec("select * from books order by ISBN ASC limit 10 offset ?;", (page_id - 1) * 10);
+	bserv::db_result db_res_1 = tx.exec("select * from libraries;");
 	lginfo << db_res.query();
 	auto books = orm_books.convert_to_vector(db_res);
-	boost::json::array json_users;
+	auto libraries = orm_libraries.convert_to_vector(db_res_1);
+	boost::json::array json_users, json_libraries;
 	for (auto &book : books)
 	{
 		json_users.push_back(book);
+	}
+	for (auto &library : libraries)
+	{
+		json_libraries.push_back(library);
 	}
 	boost::json::object pagination;
 	if (total_pages != 0)
@@ -926,6 +959,7 @@ std::nullopt_t redirect_to_books(
 		context["pagination"] = pagination;
 	}
 	context["books"] = json_users;
+	context["libraries"] = json_libraries;
 	return index("books.html", session_ptr, response, context);
 }
 
@@ -1200,6 +1234,17 @@ std::nullopt_t get_total_income_and_expenditure(
 	return redirect_to_sale(conn, session_ptr, response, 1, std::move(context));
 }
 
+std::nullopt_t get_social_prestige(
+	bserv::request_type &request,
+	bserv::response_type &response,
+	boost::json::object &&params,
+	std::shared_ptr<bserv::db_connection> conn,
+	std::shared_ptr<bserv::session_type> session_ptr)
+{
+	boost::json::object context = compute_social_prestige(request, std::move(params), conn);
+	return redirect_to_libraries(conn, session_ptr, response, 1, std::move(context));
+}
+
 // TODO: implement order_register function
 std::nullopt_t form_add_order(
 	bserv::request_type &request,
@@ -1408,6 +1453,92 @@ boost::json::object book_restock(
 		{"message", "book restocked"}};
 }
 
+boost::json::object book_donate(
+	bserv::request_type &request,
+	boost::json::object &&params,
+	std::shared_ptr<bserv::db_connection> conn)
+{
+	if (request.method() != boost::beast::http::verb::post)
+	{
+		throw bserv::url_not_found_exception{};
+	}
+
+	if (params.count("ISBN") == 0)
+	{
+		return {
+			{"success", false},
+			{"message", "`ISBN` is required"}};
+	}
+	if (params.count("quantity") == 0)
+	{
+		return {
+			{"success", false},
+			{"message", "`quantity` is required"}};
+	}
+	if (params.count("userid") == 0)
+	{
+		return {
+			{"success", false},
+			{"message", "`userid` is required"}};
+	}
+	if (params.count("library_name") == 0)
+	{
+		return {
+			{"success", false},
+			{"message", "`library_name` is required"}};
+	}
+
+	auto ISBN = params["ISBN"].as_string();
+	bserv::db_transaction tx{conn};
+
+	bserv::db_result db_res = tx.exec(
+		"select id from ?"
+		"where library_name = ?",
+		bserv::db_name("libraries"),
+		get_or_empty(params, "library_name"));
+
+	int library_id = (*db_res.begin())[0].as<int>();
+
+	bserv::db_result r = tx.exec(
+		"update ?"
+		"set inventory=inventory-?"
+		"where ISBN=? ",
+		bserv::db_name("books"),
+		get_or_empty(params, "quantity"),
+		get_or_empty(params, "ISBN"));
+
+	std::string cur_time = get_current_time_as_string();
+
+	lginfo << r.query();
+	lginfo << library_id;
+
+	bserv::db_result r2 = tx.exec(
+		"insert into ? "
+		"(user_id, num, donation_time, library_id) values "
+		"(?, ?, ?, ?) ",
+		bserv::db_name("donation"),
+		get_or_empty(params, "userid"),
+		get_or_empty(params, "quantity"),
+		cur_time,
+		library_id);
+
+	// add to library collection
+	bserv::db_result r3 = tx.exec(
+		"update ? "
+		"set total_collection = total_collection + ? "
+		"where id = ? ;",
+		bserv::db_name("libraries"),
+		get_or_empty(params, "quantity"),
+		library_id);
+
+	lginfo << r2.query();
+	lginfo << r3.query();
+	tx.commit(); // you must manually commit changes
+	return {
+		{"success", true},
+		{"message", "donate successfully"}};
+}
+
 boost::json::object comment_add(
 	bserv::request_type &request,
 	boost::json::object &&params,
@@ -1512,6 +1643,17 @@ std::nullopt_t restock_book(
 	return redirect_to_books(conn, session_ptr, response, 1, std::move(context));
 }
 
+std::nullopt_t donate_book(
+	bserv::request_type &request,
+	bserv::response_type &response,
+	boost::json::object &&params,
+	std::shared_ptr<bserv::db_connection> conn,
+	std::shared_ptr<bserv::session_type> session_ptr)
+{
+	boost::json::object context = book_donate(request, std::move(params), conn);
+	return redirect_to_books(conn, session_ptr, response, 1, std::move(context));
+}
+
 std::nullopt_t add_new_comments(
 	bserv::request_type &request,
 	bserv::response_type &response,
@@ -1548,12 +1690,19 @@ std::nullopt_t redirect_to_search(
 		"%" + search_str + "%",
 		(page_id - 1) * 10);
 
+	bserv::db_result db_res_1 = tx.exec("select * from libraries;");
+
 	lginfo << db_res.query();
 	auto lists = orm_books.convert_to_vector(db_res);
-	boost::json::array json_lists;
+	auto libraries = orm_libraries.convert_to_vector(db_res_1);
+	boost::json::array json_lists, json_libraies;
 	for (auto &list : lists)
 	{
 		json_lists.push_back(list);
+	}
+	for (auto &library : libraries)
+	{
+		json_libraies.push_back(library);
 	}
 	boost::json::object pagination;
 	if (total_pages != 0)
@@ -1601,6 +1750,7 @@ std::nullopt_t redirect_to_search(
 		context["pagination"] = pagination;
 	}
 	context["books"] = json_lists;
+	context["libraries"] = json_libraies;
 	return index("books.html", session_ptr, response, context);
 }
 
