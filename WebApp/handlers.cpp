@@ -1056,8 +1056,8 @@ std::nullopt_t redirect_to_bookstore(
 	lginfo << db_res.query();
 	std::size_t total_users = (*db_res.begin())[0].as<std::size_t>();
 	lgdebug << "total books: " << total_users << std::endl;
-	int total_pages = (int)total_users / 10;
-	if (total_users % 10 != 0)
+	int total_pages = (int)total_users / 9;
+	if (total_users % 9 != 0)
 		++total_pages;
 	lgdebug << "total pages: " << total_pages << std::endl;
 	db_res = tx.exec("SELECT b.ISBN AS ISBN, b.title AS title, b.author, b.publisher, b.retail_price, b.inventory, COUNT(l.id) AS like_count "
@@ -1065,8 +1065,8 @@ std::nullopt_t redirect_to_bookstore(
 					 "LEFT JOIN likes l ON b.ISBN = l.ISBN "
 					 "GROUP BY b.ISBN, b.title "
 					 "ORDER BY b.ISBN ASC "
-					 "LIMIT 10 OFFSET ?;",
-					 (page_id - 1) * 10);
+					 "LIMIT 9 OFFSET ?;",
+					 (page_id - 1) * 9);
 
 	lginfo << db_res.query();
 	auto books = orm_likes_books.convert_to_vector(db_res);

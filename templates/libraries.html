@@ -1,91 +1,107 @@
 {% extends "base.html" %}
 
-{% block title %}libraries{% endblock %}
+{% block title %}Libraries{% endblock %}
 
 {% block libraries_active %}active{% endblock %}
 
 {% block content %}
+<div class="container mt-5">
+  <!-- Check Social Prestige Button -->
+  <form action="/libraries/check" method="post" class="mb-4">
+    <button type="submit" class="btn btn-secondary">
+      <i class="fas fa-search"></i> Check Social Prestige
+    </button>
+  </form>
 
-<head>
-    <meta charset="UTF-8">
-    <title>Button Example</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-</head>
-<body>
-    <table>
+  <!-- Libraries Table -->
+  <div class="table-responsive">
+    <table class="table table-striped table-hover" id="libraries-table">
+      <thead class="thead-dark">
         <tr>
-            <td>  
-                <form action="/libraries/check" method="post">
-                    <button type="submit" class="btn btn-secondary">Check social prestige</button>
-                </form>
-            </td>
+          <th scope="col">#</th>
+          <th scope="col">Library</th>
+          <th scope="col" data-toggle="tooltip" title="Total collection size">
+            Collections <i class="fas fa-info-circle"></i>
+          </th>
         </tr>
+      </thead>
+      <tbody>
+        {% for library in libraries %}
+        <tr style="vertical-align: middle;">
+          <th scope="row">{{ loop.index1 }}</th>
+          <td>{{ library.library_name }}</td>
+          <td>{{ library.total_collection }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
-</body>
+  </div>
 
-<table class="table">
-  <thead>
-    <tr>
-      <th scope="col">#</th>
-      <th scope="col">Library</th>
-      <th scope="col">collections</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for library in libraries %}
-    <tr style="vertical-align: middle;">
-      <th scope="row">{{ loop.index1 }}</th>
-      <td>{{ library.library_name }}</td>
-      <td>{{ library.total_collection }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+  <!-- Pagination -->
+  {% if exists("pagination") %}
+  <nav>
+    <ul class="pagination justify-content-center">
+      {% if existsIn(pagination, "previous") %}
+      <li class="page-item">
+        <a class="page-link" href="/libraries/{{ pagination.previous }}" aria-label="Previous">
+          <span aria-hidden="true">&laquo;</span>
+        </a>
+      </li>
+      {% else %}
+      <li class="page-item disabled">
+        <a class="page-link" href="#" aria-label="Previous">
+          <span aria-hidden="true">&laquo;</span>
+        </a>
+      </li>
+      {% endif %}
+      {% if existsIn(pagination, "left_ellipsis") %}
+      <li class="page-item"><a class="page-link" href="/libraries/1">1</a></li>
+      <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+      {% endif %}
+      {% for page in pagination.pages_left %}
+      <li class="page-item"><a class="page-link" href="/libraries/{{ page }}">{{ page }}</a></li>
+      {% endfor %}
+      <li class="page-item active" aria-current="page"><a class="page-link" href="/libraries/{{ pagination.current }}">{{ pagination.current }}</a></li>
+      {% for page in pagination.pages_right %}
+      <li class="page-item"><a class="page-link" href="/libraries/{{ page }}">{{ page }}</a></li>
+      {% endfor %}
+      {% if existsIn(pagination, "right_ellipsis") %}
+      <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+      <li class="page-item"><a class="page-link" href="/libraries/{{ pagination.total }}">{{ pagination.total }}</a></li>
+      {% endif %}
+      {% if existsIn(pagination, "next") %}
+      <li class="page-item">
+        <a class="page-link" href="/libraries/{{ pagination.next }}" aria-label="Next">
+          <span aria-hidden="true">&raquo;</span>
+        </a>
+      </li>
+      {% else %}
+      <li class="page-item disabled">
+        <a class="page-link" href="#" aria-label="Next">
+          <span aria-hidden="true">&raquo;</span>
+        </a>
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
 
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
-{% if exists("pagination") %}
-<ul class="pagination">
-  {% if existsIn(pagination, "previous") %}
-  <li class="page-item">
-    <a class="page-link" href="/libraries/{{ pagintaion.previous }}" aria-label="Previous">
-      <span aria-hidden="true">&laquo;</span>
-    </a>
-  </li>
-  {% else %}
-  <li class="page-item disabled">
-    <a class="page-link" href="#" aria-label="Previous">
-      <span aria-hidden="true">&laquo;</span>
-    </a>
-  </li>
-  {% endif %}
-  {% if existsIn(pagination, "left_ellipsis") %}
-  <li class="page-item"><a class="page-link" href="/libraries/1">1</a></li>
-  <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
-  {% endif %}
-  {% for page in pagination.pages_left %}
-  <li class="page-item"><a class="page-link" href="/libraries/{{ page }}">{{ page }}</a></li>
-  {% endfor %}
-  <li class="page-item active" aria-current="page"><a class="page-link" href="/libraries/{{ pagination.current }}">{{ pagination.current }}</a></li>
-  {% for page in pagination.pages_right %}
-  <li class="page-item"><a class="page-link" href="/libraries/{{ page }}">{{ page }}</a></li>
-  {% endfor %}
-  {% if existsIn(pagination, "right_ellipsis") %}
-  <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
-  <li class="page-item"><a class="page-link" href="/libraries/{{ pagination.total }}">{{ pagination.total }}</a></li>
-  {% endif %}
-  {% if existsIn(pagination, "next") %}
-  <li class="page-item">
-    <a class="page-link" href="/libraries/{{ pagination.next }}" aria-label="Next">
-      <span aria-hidden="true">&raquo;</span>
-    </a>
-  </li>
-  {% else %}
-  <li class="page-item disabled">
-    <a class="page-link" href="#" aria-label="Next">
-      <span aria-hidden="true">&raquo;</span>
-    </a>
-  </li>
-  {% endif %}
-</ul>
-{% endif %}
+<!-- Bootstrap Styles -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+<!-- jQuery and Bootstrap Bundle -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  // Initialize tooltips
+  $(document).ready(function () {
+    $('[data-toggle="tooltip"]').tooltip();
+  });
+</script>
+
 {% endblock %}

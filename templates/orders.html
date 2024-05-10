@@ -1,107 +1,124 @@
 {% extends "base.html" %}
 
-{% block title %}orders{% endblock %}
+{% block title %}Orders{% endblock %}
 
 {% block orders_active %}active{% endblock %}
 
 {% block content %}
-
-<table class="table">
-  <thead>
-    <tr>
-      <th scope="col">#</th>
-      <th scope="col">operator</th>
-      <th scope="col">ISBN</th>
-      <th scope="col">status</th>
-      <th scope="col">time</th>
-      <th scope="col">quantity</th>
-      <th scope="col">Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for order in orders %}
-    <tr style="vertical-align: middle;">
-      <th scope="row">{{ loop.index1 }}</th>
-      <td>{{ order.user_id }}</td>
-      <td>{{ order.ISBN }}</td>
-      <td>
-      {% if order.order_status == 0 %}
-        Unpaid
-      {% else %}
-        {% if order.order_status == 1 %}
-          Paid
-        {% else %}
-          {% if order.order_status == 2 %}
-            Arrived
+<div class="container mt-5">
+  <!-- Orders Table -->
+  <div class="table-responsive mb-4">
+    <table class="table table-striped table-hover">
+      <thead class="thead-dark">
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Operator</th>
+          <th scope="col">ISBN</th>
+          <th scope="col">Status</th>
+          <th scope="col">Time</th>
+          <th scope="col">Quantity</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+        <tr style="vertical-align: middle;">
+          <th scope="row">{{ loop.index1 }}</th>
+          <td>{{ order.user_id }}</td>
+          <td>{{ order.ISBN }}</td>
+          <td>
+          {% if order.order_status == 0 %}
+            <span class="badge badge-warning">Unpaid</span>
+          {% else if order.order_status == 1 %}
+            <span class="badge badge-success">Paid</span>
+          {% else if order.order_status == 2 %}
+            <span class="badge badge-info">Arrived</span>
+          {% else if order.order_status == 3 %}
+            <span class="badge badge-secondary">Cancelled</span>
           {% else %}
-            {% if order.order_status == 3 %}
-              Cancelled
-            {% else %}
-              Unknown Status
-            {% endif %}
+            <span class="badge badge-danger">Unknown Status</span>
           {% endif %}
-        {% endif %}
+          </td>
+          <td>{{ order.order_time }}</td>
+          <td>{{ order.order_quantity }}</td>
+          <td>
+            <form action="/delete_order" method="POST" style="display: inline;" onsubmit="return confirmDeletion('{{ order.ISBN }}')">
+              <input type="hidden" name="userid" value="{{ user.id }}">
+              <input type="hidden" name="orderid" value="{{ order.id }}">
+              <button class="btn btn-danger btn-sm" type="submit"><i class="fas fa-trash-alt"></i> Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if exists("pagination") %}
+  <nav>
+    <ul class="pagination justify-content-center">
+      {% if existsIn(pagination, "previous") %}
+      <li class="page-item">
+        <a class="page-link" href="/orders/{{ pagination.previous }}" aria-label="Previous">
+          <span aria-hidden="true">&laquo;</span>
+        </a>
+      </li>
+      {% else %}
+      <li class="page-item disabled">
+        <a class="page-link" href="#" aria-label="Previous">
+          <span aria-hidden="true">&laquo;</span>
+        </a>
+      </li>
       {% endif %}
-      </td>
-      <td>{{ order.order_time }}</td>
-      <td>{{ order.order_quantity }}</td>
-      <td>
-        <form action="/delete_order" method="POST" style="display: inline;">
-          <input type="hidden" name="userid" value="{{ user.id }}">
-          <input type="hidden" name="orderid" value="{{ order.id }}">
-          <button class="btn btn-danger" type="submit"> Delete
-          </button>
-        </form>
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+      {% if existsIn(pagination, "left_ellipsis") %}
+      <li class="page-item"><a class="page-link" href="/orders/1">1</a></li>
+      <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+      {% endif %}
+      {% for page in pagination.pages_left %}
+      <li class="page-item"><a class="page-link" href="/orders/{{ page }}">{{ page }}</a></li>
+      {% endfor %}
+      <li class="page-item active" aria-current="page"><a class="page-link" href="/orders/{{ pagination.current }}">{{ pagination.current }}</a></li>
+      {% for page in pagination.pages_right %}
+      <li class="page-item"><a class="page-link" href="/orders/{{ page }}">{{ page }}</a></li>
+      {% endfor %}
+      {% if existsIn(pagination, "right_ellipsis") %}
+      <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+      <li class="page-item"><a class="page-link" href="/orders/{{ pagination.total }}">{{ pagination.total }}</a></li>
+      {% endif %}
+      {% if existsIn(pagination, "next") %}
+      <li class="page-item">
+        <a class="page-link" href="/orders/{{ pagination.next }}" aria-label="Next">
+          <span aria-hidden="true">&raquo;</span>
+        </a>
+      </li>
+      {% else %}
+      <li class="page-item disabled">
+        <a class="page-link" href="#" aria-label="Next">
+          <span aria-hidden="true">&raquo;</span>
+        </a>
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
 
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
-{% if exists("pagination") %}
-<ul class="pagination">
-  {% if existsIn(pagination, "previous") %}
-  <li class="page-item">
-    <a class="page-link" href="/orders/{{ pagination.previous }}" aria-label="Previous">
-      <span aria-hidden="true">&laquo;</span>
-    </a>
-  </li>
-  {% else %}
-  <li class="page-item disabled">
-    <a class="page-link" href="#" aria-label="Previous">
-      <span aria-hidden="true">&laquo;</span>
-    </a>
-  </li>
-  {% endif %}
-  {% if existsIn(pagination, "left_ellipsis") %}
-  <li class="page-item"><a class="page-link" href="/orders/1">1</a></li>
-  <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
-  {% endif %}
-  {% for page in pagination.pages_left %}
-  <li class="page-item"><a class="page-link" href="/orders/{{ page }}">{{ page }}</a></li>
-  {% endfor %}
-  <li class="page-item active" aria-current="page"><a class="page-link" href="/orders/{{ pagination.current }}">{{ pagination.current }}</a></li>
-  {% for page in pagination.pages_right %}
-  <li class="page-item"><a class="page-link" href="/orders/{{ page }}">{{ page }}</a></li>
-  {% endfor %}
-  {% if existsIn(pagination, "right_ellipsis") %}
-  <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
-  <li class="page-item"><a class="page-link" href="/orders/{{ pagination.total }}">{{ pagination.total }}</a></li>
-  {% endif %}
-  {% if existsIn(pagination, "next") %}
-  <li class="page-item">
-    <a class="page-link" href="/orders/{{ pagination.next }}" aria-label="Next">
-      <span aria-hidden="true">&raquo;</span>
-    </a>
-  </li>
-  {% else %}
-  <li class="page-item disabled">
-    <a class="page-link" href="#" aria-label="Next">
-      <span aria-hidden="true">&raquo;</span>
-    </a>
-  </li>
-  {% endif %}
-</ul>
-{% endif %}
+<!-- Bootstrap Styles -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+<!-- jQuery and Bootstrap Bundle -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+
+<!-- Confirmation Script -->
+<script>
+  function confirmDeletion(ISBN) {
+    return confirm("Are you sure you want to delete the order for ISBN \"" + ISBN + "\"?");
+  }
+</script>
+
 {% endblock %}

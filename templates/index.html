@@ -7,26 +7,89 @@
 {% block content %}
 <div class="p-5 mb-4 bg-light rounded-3">
   <div class="container-fluid py-5">
-    <h1 class="display-5 fw-bold">Custom jumbotron</h1>
-    <p class="col-md-8 fs-4">Using a series of utilities, you can create this jumbotron, just like the one in previous versions of Bootstrap. Check out the examples below for how you can remix and restyle it to your liking.</p>
-    <button class="btn btn-primary btn-lg" type="button">Example button</button>
+    <h1 class="display-5 fw-bold">Welcome to WebApp Bookstore</h1>
+    <p class="col-md-8 fs-4">Discover your next great read among thousands of books in our collection. From timeless classics to the latest bestsellers, we have something for everyone.</p>
   </div>
 </div>
 
 <div class="row align-items-md-stretch">
   <div class="col-md-6">
     <div class="h-100 p-5 text-white bg-dark rounded-3">
-      <h2>Change the background</h2>
-      <p>Swap the background-color utility and add a `.text-*` color utility to mix up the jumbotron look. Then, mix and match with additional component themes and more.</p>
-      <button class="btn btn-outline-light" type="button">Example button</button>
+      <h2>Featured Books</h2>
+      <ul>
+        <li>The Catcher in the Rye - J.D. Salinger</li>
+        <li>To Kill a Mockingbird - Harper Lee</li>
+        <li>1984 - George Orwell</li>
+      </ul>
+      <a class="btn btn-outline-light" href="/bookstore" role="button">Shop Now</a>
+    </div>
+  </div>  
+  <div class="col-md-6">
+    <div id="quotesCarousel" class="carousel slide bg-light border rounded-3 h-100 p-5" data-bs-ride="carousel">
+      <h2>Inspirational Quotes</h2>
+      <div class="carousel-inner">
+        <div class="carousel-item active">
+          <blockquote class="blockquote">
+            <p>"The only limit to our realization of tomorrow is our doubts of today."</p>
+            <footer class="blockquote-footer">Franklin D. Roosevelt</footer>
+          </blockquote>
+        </div>
+        <div class="carousel-item">
+          <blockquote class="blockquote">
+            <p>"In the end, we will remember not the words of our enemies, but the silence of our friends."</p>
+            <footer class="blockquote-footer">Martin Luther King Jr.</footer>
+          </blockquote>
+        </div>
+        <div class="carousel-item">
+          <blockquote class="blockquote">
+            <p>"Success is not final, failure is not fatal: it is the courage to continue that counts."</p>
+            <footer class="blockquote-footer">Winston Churchill</footer>
+          </blockquote>
+        </div>
+        <div class="carousel-item">
+          <blockquote class="blockquote">
+            <p>"It is our choices that show what we truly are, far more than our abilities."</p>
+            <footer class="blockquote-footer">J.K. Rowling</footer>
+          </blockquote>
+        </div>
+      </div>
+      <button class="carousel-control-prev" type="button" data-bs-target="#quotesCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Previous</span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#quotesCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Next</span>
+      </button>
     </div>
   </div>
-  <div class="col-md-6">
-    <div class="h-100 p-5 bg-light border rounded-3">
-      <h2>Add borders</h2>
-      <p>Or, keep it light and add a border for some added definition to the boundaries of your content. Be sure to look under the hood at the source HTML here as we've adjusted the alignment and sizing of both column's content for equal-height.</p>
-      <button class="btn btn-outline-secondary" type="button">Example button</button>
-    </div>
+  
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      var myCarousel = new bootstrap.Carousel(document.getElementById("quotesCarousel"), {
+        interval: 5000, // 5 seconds
+        ride: 'carousel'
+      });
+
+      document.addEventListener("click", function() {
+        myCarousel.next();
+      });
+    });
+  </script>  
+</div>
+
+<div class="p-5 my-4 bg-secondary text-white rounded-3">
+  <div class="container-fluid py-5">
+    <h2 class="display-6">Customer Reviews</h2>
+    <blockquote class="blockquote">
+      <p>"WebApp Bookstore has the best selection and the most helpful staff!"</p>
+      <footer class="blockquote-footer text-light">Sarah Thompson</footer>
+    </blockquote>
+    <blockquote class="blockquote">
+      <p>"I found my favorite book at an unbeatable price. Highly recommend!"</p>
+      <footer class="blockquote-footer text-light">James Peterson</footer>
+    </blockquote>
+    <a class="btn btn-outline-light" href="/comments" role="button">View more</a>
   </div>
 </div>
 {% endblock %}

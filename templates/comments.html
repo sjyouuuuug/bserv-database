@@ -1,50 +1,90 @@
 {% extends "base.html" %}
 
-{% block title %}comments{% endblock %}
+{% block title %}Comments{% endblock %}
 
 {% block comments_active %}active{% endblock %}
 
 {% block content %}
+<div class="container mt-5">
+  <!-- Search Form -->
+  <form action="/comments/search" method="post" class="mb-4">
+    <div class="input-group">
+      <input type="text" name="search" id="search" placeholder="Search comments" class="form-control" aria-label="Search for comments">
+      <div class="input-group-append">
+        <button type="submit" class="btn btn-secondary"><i class="fas fa-search"></i> Search</button>
+      </div>
+    </div>
+  </form>
 
-<table>
-  <td>  
-  <form action="/comments/search" method="post">
-      <input type="text" name="search" id="search" placeholder="Search">
-      <button type="submit" class="btn btn-secondary">Search</button>
-    </form>
-  </td>
-</table>
-
-<table class="table">
-  <thead>
-    <tr>
-      <th scope="col">#</th>
-      <th scope="col">ISBN</th>
-      <th scope="col">Title</th>
-      <th scope="col">Comments</th>
-      <th scope="col">Actions</th>
-    </tr>
-  </thead>
-  <tbody>
+  <!-- Comments Cards -->
+  <div class="row">
     {% for comment in comments %}
-    <tr style="vertical-align: middle;">
-      <th scope="row">{{ loop.index1 }}</th>
-      <td>{{ comment.ISBN }}</td>
-      <td>{{ comment.title }}</td>
-      <td>{{ comment.comment_text }}</td>
-      {% if exists("user") %}
-      <td>
-        <input type="hidden" name="ISBN" value="{{ comment.ISBN }}">
-        <input type="hidden" name="userid" value="{{ user.id }}">
-        <button class="btn btn-warning" type="button" data-toggle="modal" data-target="#restockModal" onclick="openRestockModal('{{ comment.ISBN }}')">Add new comment</button>
-      </td>
-      {% else %}
-      <td><button class="btn btn-primary" type="button" disabled>No Permission</button></td>
-      {% endif %}
-    </tr>
+    <div class="col-md-6 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title"><i class="fas fa-comments"></i> {{ comment.title }}</h5>
+          <p class="card-text"><strong>ISBN:</strong> {{ comment.ISBN }}</p>
+          <p class="card-text">{{ comment.comment_text }}</p>
+          {% if exists("user") %}
+          <button class="btn btn-warning" type="button" data-toggle="modal" data-target="#restockModal" onclick="openRestockModal('{{ comment.ISBN }}')"><i class="fas fa-plus"></i> Add new comment</button>
+          {% else %}
+          <button class="btn btn-primary" type="button" disabled>No Permission</button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
     {% endfor %}
-  </tbody>
-</table>
+  </div>
+
+  <!-- Pagination -->
+  {% if exists("pagination") %}
+  <nav>
+    <ul class="pagination justify-content-center">
+      {% if existsIn(pagination, "previous") %}
+      <li class="page-item">
+        <a class="page-link" href="/comments/{{ pagination.previous }}" aria-label="Previous">
+          <span aria-hidden="true">&laquo;</span>
+        </a>
+      </li>
+      {% else %}
+      <li class="page-item disabled">
+        <a class="page-link" href="#" aria-label="Previous">
+          <span aria-hidden="true">&laquo;</span>
+        </a>
+      </li>
+      {% endif %}
+      {% if existsIn(pagination, "left_ellipsis") %}
+      <li class="page-item"><a class="page-link" href="/comments/1">1</a></li>
+      <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+      {% endif %}
+      {% for page in pagination.pages_left %}
+      <li class="page-item"><a class="page-link" href="/comments/{{ page }}">{{ page }}</a></li>
+      {% endfor %}
+      <li class="page-item active" aria-current="page"><a class="page-link" href="/comments/{{ pagination.current }}">{{ pagination.current }}</a></li>
+      {% for page in pagination.pages_right %}
+      <li class="page-item"><a class="page-link" href="/comments/{{ page }}">{{ page }}</a></li>
+      {% endfor %}
+      {% if existsIn(pagination, "right_ellipsis") %}
+      <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+      <li class="page-item"><a class="page-link" href="/comments/{{ pagination.total }}">{{ pagination.total }}</a></li>
+      {% endif %}
+      {% if existsIn(pagination, "next") %}
+      <li class="page-item">
+        <a class="page-link" href="/comments/{{ pagination.next }}" aria-label="Next">
+          <span aria-hidden="true">&raquo;</span>
+        </a>
+      </li>
+      {% else %}
+      <li class="page-item disabled">
+        <a class="page-link" href="#" aria-label="Next">
+          <span aria-hidden="true">&raquo;</span>
+        </a>
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
 
 <!-- Restock Modal -->
 <div id="restockModal" class="modal fade" tabindex="-1" role="dialog">
@@ -82,57 +122,14 @@ function openRestockModal(isbn) {
 }
 </script>
 
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
-<!-- Bootstrap Modal Scripts (Ensure jQuery is included) -->
+<!-- Bootstrap Styles -->
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+<!-- jQuery and Bootstrap Bundle -->
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
 
-
-
-{% if exists("pagination") %}
-<ul class="pagination">
-  {% if existsIn(pagination, "previous") %}
-  <li class="page-item">
-    <a class="page-link" href="/comments/{{ pagination.previous }}" aria-label="Previous">
-      <span aria-hidden="true">&laquo;</span>
-    </a>
-  </li>
-  {% else %}
-  <li class="page-item disabled">
-    <a class="page-link" href="#" aria-label="Previous">
-      <span aria-hidden="true">&laquo;</span>
-    </a>
-  </li>
-  {% endif %}
-  {% if existsIn(pagination, "left_ellipsis") %}
-  <li class="page-item"><a class="page-link" href="/comments/1">1</a></li>
-  <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
-  {% endif %}
-  {% for page in pagination.pages_left %}
-  <li class="page-item"><a class="page-link" href="/comments/{{ page }}">{{ page }}</a></li>
-  {% endfor %}
-  <li class="page-item active" aria-current="page"><a class="page-link" href="/comments/{{ pagination.current }}">{{ pagination.current }}</a></li>
-  {% for page in pagination.pages_right %}
-  <li class="page-item"><a class="page-link" href="/comments/{{ page }}">{{ page }}</a></li>
-  {% endfor %}
-  {% if existsIn(pagination, "right_ellipsis") %}
-  <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
-  <li class="page-item"><a class="page-link" href="/comments/{{ pagination.total }}">{{ pagination.total }}</a></li>
-  {% endif %}
-  {% if existsIn(pagination, "next") %}
-  <li class="page-item">
-    <a class="page-link" href="/comments/{{ pagination.next }}" aria-label="Next">
-      <span aria-hidden="true">&raquo;</span>
-    </a>
-  </li>
-  {% else %}
-  <li class="page-item disabled">
-    <a class="page-link" href="#" aria-label="Next">
-      <span aria-hidden="true">&raquo;</span>
-    </a>
-  </li>
-  {% endif %}
-</ul>
-{% endif %}
 {% endblock %}
