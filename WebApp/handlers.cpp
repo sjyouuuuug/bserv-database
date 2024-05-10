@@ -1805,8 +1805,8 @@ std::nullopt_t redirect_to_search_bookstore(
 	lginfo << db_res.query();
 	std::size_t total_users = (*db_res.begin())[0].as<std::size_t>();
 	lgdebug << "total users: " << total_users << std::endl;
-	int total_pages = (int)total_users / 10;
-	if (total_users % 10 != 0)
+	int total_pages = (int)total_users / 9;
+	if (total_users % 9 != 0)
 		++total_pages;
 	lgdebug << "total pages: " << total_pages << std::endl;
 
@@ -1816,9 +1816,9 @@ std::nullopt_t redirect_to_search_bookstore(
 					 "WHERE title LIKE ? "
 					 "GROUP BY b.ISBN, b.title "
 					 "ORDER BY b.ISBN ASC "
-					 "LIMIT 10 OFFSET ?;",
+					 "LIMIT 9 OFFSET ?;",
 					 "%" + search_str + "%",
-					 (page_id - 1) * 10);
+					 (page_id - 1) * 9);
 
 	lginfo << db_res.query();
 	auto lists = orm_likes_books.convert_to_vector(db_res);

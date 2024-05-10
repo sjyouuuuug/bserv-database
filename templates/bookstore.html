@@ -16,10 +16,30 @@
     </div>
   </form>
 
+  <!-- Sort Buttons -->
+  <div class="mb-4 d-flex justify-content-between">
+    <div>
+      <button id="sort-isbn-asc" class="btn btn-outline-secondary btn-sm" title="Sort by ISBN Ascending">
+        <i class="fas fa-sort-numeric-up"></i> ISBN Asc
+      </button>
+      <button id="sort-isbn-desc" class="btn btn-outline-secondary btn-sm" title="Sort by ISBN Descending">
+        <i class="fas fa-sort-numeric-down"></i> ISBN Desc
+      </button>
+    </div>
+    <div>
+      <button id="sort-likes-asc" class="btn btn-outline-secondary btn-sm" title="Sort by Likes Ascending">
+        <i class="fas fa-thumbs-up"></i> Likes Asc
+      </button>
+      <button id="sort-likes-desc" class="btn btn-outline-secondary btn-sm" title="Sort by Likes Descending">
+        <i class="fas fa-thumbs-down"></i> Likes Desc
+      </button>
+    </div>
+  </div>
+
   <!-- Book Cards -->
-  <div class="row">
+  <div class="row" id="book-list">
     {% for book in books %}
-    <div class="col-md-4 mb-4">
+    <div class="col-md-4 mb-4 book-item" data-isbn="{{ book.ISBN }}" data-likes="{{ book.like_count }}">
       <div class="card h-100">
         <div class="card-body">
           <h5 class="card-title">{{ book.title }}</h5>
@@ -125,11 +145,46 @@
     var quantity = parseInt(quantityInput.value, 10);
 
     if (quantity > inventory) {
-      alert('Insufficient stock for "' + bookTitle + '". Please wait for a restock or reduce the quantity you wish to purchase.');
+      alert('Insufficient stock for "' + bookTitle + '". Please wait for a restock or reduce the quantity you wish to purchase。');
       return false;
     }
 
     return confirmPurchase(bookTitle);
   }
+
+  function sortBooks(comparator) {
+    var bookList = document.getElementById('book-list');
+    var books = Array.from(bookList.getElementsByClassName('book-item'));
+
+    books.sort(comparator);
+
+    books.forEach(function (book) {
+      bookList.appendChild(book);
+    });
+  }
+
+  document.getElementById('sort-isbn-asc').addEventListener('click', function () {
+    sortBooks(function (a, b) {
+      return a.dataset.isbn.localeCompare(b.dataset.isbn);
+    });
+  });
+
+  document.getElementById('sort-isbn-desc').addEventListener('click', function () {
+    sortBooks(function (a, b) {
+      return b.dataset.isbn.localeCompare(a.dataset.isbn);
+    });
+  });
+
+  document.getElementById('sort-likes-asc').addEventListener('click', function () {
+    sortBooks(function (a, b) {
+      return parseInt(a.dataset.likes, 10) - parseInt(b.dataset.likes, 10);
+    });
+  });
+
+  document.getElementById('sort-likes-desc').addEventListener('click', function () {
+    sortBooks(function (a, b) {
+      return parseInt(b.dataset.likes, 10) - parseInt(a.dataset.likes, 10);
+    });
+  });
 </script>
 {% endblock %}
