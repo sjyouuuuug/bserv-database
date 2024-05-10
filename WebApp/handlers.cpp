@@ -1290,6 +1290,31 @@ boost::json::object book_delete(
 		{"message", "book deleted"}};
 }
 
+boost::json::object order_delete(
+	bserv::request_type &request,
+	boost::json::object &&params,
+	std::shared_ptr<bserv::db_connection> conn)
+{
+	if (request.method() != boost::beast::http::verb::post)
+	{
+		throw bserv::url_not_found_exception{};
+	}
+	
+	bserv::db_transaction tx{conn};
+
+	bserv::db_result r = tx.exec(
+		"delete from ?"
+		"where id = ? ",
+		bserv::db_name("orders"),
+		get_or_empty(params, "orderid"));
+
+	lginfo << r.query();
+	tx.commit(); // you must manually commit changes
+	return {
+		{"success", true},
+		{"message", "order deleted"}};
+}
+
 boost::json::object like_hit(
 	bserv::request_type &request,
 	boost::json::object &&params,
@@ -1608,6 +1633,17 @@ std::nullopt_t delete_book(
 {
 	boost::json::object context = book_delete(request, std::move(params), conn);
 	return redirect_to_books(conn, session_ptr, response, 1, std::move(context));
+}
+
+std::nullopt_t delete_order(
+	bserv::request_type &request,
+	bserv::response_type &response,
+	boost::json::object &&params,
+	std::shared_ptr<bserv::db_connection> conn,
+	std::shared_ptr<bserv::session_type> session_ptr)
+{
+	boost::json::object context = order_delete(request, std::move(params), conn);
+	return redirect_to_orders(conn, session_ptr, response, 1, std::move(context));
 }
 
 std::nullopt_t hit_like(

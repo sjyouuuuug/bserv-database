@@ -139,6 +139,13 @@ std::nullopt_t delete_book(
     std::shared_ptr<bserv::db_connection> conn,
     std::shared_ptr<bserv::session_type> session_ptr);
 
+std::nullopt_t delete_order(
+    bserv::request_type& request,
+    bserv::response_type& response,
+    boost::json::object&& params,
+    std::shared_ptr<bserv::db_connection> conn,
+    std::shared_ptr<bserv::session_type> session_ptr);
+
 std::nullopt_t hit_like(
     bserv::request_type& request,
     bserv::response_type& response,

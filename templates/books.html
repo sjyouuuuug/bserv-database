@@ -61,11 +61,10 @@
   </div>
 </div>
 
-<!-- Donate Modal -->
 <div class="modal fade" id="donateModal" tabindex="-1" aria-labelledby="donateModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form method="post" action="/donate_book">
+      <form method="post" action="/donate_book" onsubmit="return validateDonateForm()">
         <div class="modal-header">
           <h5 class="modal-title" id="donateModalLabel">Donate Book</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -74,6 +73,8 @@
           <input type="hidden" id="donateISBN" name="ISBN">
           <input type="hidden" id="donateLibraryName" name="library_name">
           <input type="hidden" name="userid" value="{{ user.id }}">
+          <input type="hidden" id="donateInventory" value="0">
+
           <div class="mb-3">
             <label for="library" class="form-label">Library</label>
             <select class="form-select" id="library" name="library" required>
@@ -128,7 +129,7 @@
       <td>
         <input type="hidden" name="ISBN" value="{{ book.ISBN }}">
         <button class="btn btn-warning" type="button" data-toggle="modal" data-target="#restockModal" onclick="openRestockModal('{{ book.ISBN }}')">Restock</button>
-        <button class="btn btn-success" type="button" data-toggle="modal" data-target="#donateModal" onclick="openDonateModal('{{ book.ISBN }}')">Donate</button>
+        <button class="btn btn-success" type="button" data-toggle="modal" data-target="#donateModal" onclick="openDonateModal('{{ book.ISBN }}', '{{ book.inventory }}')">Donate</button>
       </td>
       {% else %}
       <td><button class="btn btn-primary" type="button" disabled>No Permission</button></td>
@@ -172,19 +173,37 @@
     document.getElementById('restockISBN').value = ISBN;
   }
   
-  function openDonateModal(ISBN) {
-    document.getElementById('donateISBN').value = ISBN;
-  
-    // Update hidden field with the currently selected library name
-    const librarySelect = document.getElementById('library');
-    const selectedLibraryName = librarySelect.options[librarySelect.selectedIndex].text;
-    document.getElementById('donateLibraryName').value = selectedLibraryName;
-  }
+  function openDonateModal(ISBN, inventory) {
+  document.getElementById('donateISBN').value = ISBN;
+  document.getElementById('donateInventory').value = inventory;
+
+  const librarySelect = document.getElementById('library');
+  const selectedLibraryName = librarySelect.options[librarySelect.selectedIndex].text;
+  document.getElementById('donateLibraryName').value = selectedLibraryName;
+}
   
   document.getElementById('library').addEventListener('change', function() {
     const selectedLibraryName = this.options[this.selectedIndex].text;
     document.getElementById('donateLibraryName').value = selectedLibraryName;
   });
+
+  function validateDonateForm() {
+  const quantityInput = document.getElementById('donateQuantity');
+  const inventory = parseInt(document.getElementById('donateInventory').value);
+  const quantity = parseInt(quantityInput.value);
+
+  if (quantity > inventory) {
+    alert(`Donation quantity exceeds current inventory (Max: ${inventory})`);
+    return false;
+  }
+
+  if (quantity < 1 || isNaN(quantity)) {
+    alert('Please enter a valid quantity.');
+    return false;
+  }
+
+  return true;
+}
 </script>
 
 <!-- Bootstrap Modal Scripts (Ensure jQuery is included) -->

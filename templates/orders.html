@@ -15,6 +15,7 @@
       <th scope="col">status</th>
       <th scope="col">time</th>
       <th scope="col">quantity</th>
+      <th scope="col">Actions</th>
     </tr>
   </thead>
   <tbody>
@@ -44,6 +45,14 @@
       </td>
       <td>{{ order.order_time }}</td>
       <td>{{ order.order_quantity }}</td>
+      <td>
+        <form action="/delete_order" method="POST" style="display: inline;">
+          <input type="hidden" name="userid" value="{{ user.id }}">
+          <input type="hidden" name="orderid" value="{{ order.id }}">
+          <button class="btn btn-danger" type="submit"> Delete
+          </button>
+        </form>
+      </td>
     </tr>
     {% endfor %}
   </tbody>
