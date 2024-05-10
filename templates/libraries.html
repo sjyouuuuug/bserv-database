@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}sale{% endblock %}
+{% block title %}libraries{% endblock %}
 
-{% block sale_active %}active{% endblock %}
+{% block libraries_active %}active{% endblock %}
 
 {% block content %}
 
@@ -27,20 +27,16 @@
   <thead>
     <tr>
       <th scope="col">#</th>
-      <th scope="col">Buyer</th>
-      <th scope="col">ISBN</th>
-      <th scope="col">time</th>
-      <th scope="col">quantity</th>
+      <th scope="col">Library</th>
+      <th scope="col">collections</th>
     </tr>
   </thead>
   <tbody>
-    {% for sale in sales %}
+    {% for library in libraries %}
     <tr style="vertical-align: middle;">
       <th scope="row">{{ loop.index1 }}</th>
-      <td>{{ sale.user_id }}</td>
-      <td>{{ sale.ISBN }}</td>
-      <td>{{ sale.sale_time }}</td>
-      <td>{{ sale.sale_quantity }}</td>
+      <td>{{ library.library_name }}</td>
+      <td>{{ library.total_collection }}</td>
     </tr>
     {% endfor %}
   </tbody>
@@ -51,7 +47,7 @@
 <ul class="pagination">
   {% if existsIn(pagination, "previous") %}
   <li class="page-item">
-    <a class="page-link" href="/sale/{{ pagination.previous }}" aria-label="Previous">
+    <a class="page-link" href="/libraries/{{ pagintaion.previous }}" aria-label="Previous">
       <span aria-hidden="true">&laquo;</span>
     </a>
   </li>
@@ -63,23 +59,23 @@
   </li>
   {% endif %}
   {% if existsIn(pagination, "left_ellipsis") %}
-  <li class="page-item"><a class="page-link" href="/sale/1">1</a></li>
+  <li class="page-item"><a class="page-link" href="/libraries/1">1</a></li>
   <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
   {% endif %}
   {% for page in pagination.pages_left %}
-  <li class="page-item"><a class="page-link" href="/sale/{{ page }}">{{ page }}</a></li>
+  <li class="page-item"><a class="page-link" href="/libraries/{{ page }}">{{ page }}</a></li>
   {% endfor %}
-  <li class="page-item active" aria-current="page"><a class="page-link" href="/sale/{{ pagination.current }}">{{ pagination.current }}</a></li>
+  <li class="page-item active" aria-current="page"><a class="page-link" href="/libraries/{{ pagination.current }}">{{ pagination.current }}</a></li>
   {% for page in pagination.pages_right %}
-  <li class="page-item"><a class="page-link" href="/sale/{{ page }}">{{ page }}</a></li>
+  <li class="page-item"><a class="page-link" href="/libraries/{{ page }}">{{ page }}</a></li>
   {% endfor %}
   {% if existsIn(pagination, "right_ellipsis") %}
   <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
-  <li class="page-item"><a class="page-link" href="/sale/{{ pagination.total }}">{{ pagination.total }}</a></li>
+  <li class="page-item"><a class="page-link" href="/libraries/{{ pagination.total }}">{{ pagination.total }}</a></li>
   {% endif %}
   {% if existsIn(pagination, "next") %}
   <li class="page-item">
-    <a class="page-link" href="/sale/{{ pagination.next }}" aria-label="Next">
+    <a class="page-link" href="/libraries/{{ pagination.next }}" aria-label="Next">
       <span aria-hidden="true">&raquo;</span>
     </a>
   </li>

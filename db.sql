@@ -76,6 +76,24 @@ CREATE TABLE comments (
     FOREIGN KEY (ISBN) REFERENCES books(ISBN)
 );
 
+CREATE TABLE libraries (
+    id serial PRIMARY KEY,                           -- id
+    total_collection integer NOT NULL,               -- 总藏书量
+    social_prestige_per_book numeric(6, 2) NOT NULL, -- 每捐一本书获得的社会声誉
+    library_name character varying(255) NOT NULL     -- 图书馆名称
+);
+
+CREATE TABLE donation (
+    id serial PRIMARY KEY,                           -- id
+    user_id integer NOT NULL,                        -- 用户id
+    num integer NOT NULL,                            -- 捐书数量
+    donation_time timestamp NOT NULL,                -- 捐书时间
+    library_id integer NOT NULL,                     -- 图书馆id
+    -- foreign key
+    FOREIGN KEY (user_id) REFERENCES auth_user(id),
+    FOREIGN KEY (library_id) REFERENCES libraries(id)
+);
+
 -- insert superuser while creating the table
 INSERT INTO auth_user (username, password, is_superuser, first_name, last_name, email, staff_number, sex, age)
 VALUES ('ffa500', 'VwIK2qsXCGMJsNhX$fqiPYlimk1CyExpMX3WISZZ19iCbQlktoerWJIMqNLA=', true, 'jy', 's', 'ffa500@gmail.com', 205, 'M', 22);
@@ -115,3 +133,14 @@ INSERT INTO books (ISBN, title, author, publisher, price, inventory, retail_pric
 ('978-0-393-32500-9', 'Slaughterhouse-Five', 'Kurt Vonnegut', 'Modern Library', 18.99, 16, 24.99),
 ('978-0-14-017739-9', 'Gone with the Wind', 'Margaret Mitchell', 'Macmillan', 24.99, 15, 30.99);
 
+INSERT INTO libraries (total_collection, library_name, social_prestige_per_book) VALUES
+    (15000, 'Central Library', 3.25),       -- 中央图书馆
+    (25000, 'Westside Public Library', 2.75),  -- 西侧公共图书馆
+    (12000, 'East City Community Library', 3.10),  -- 东城社区图书馆
+    (18000, 'North Ridge University Library', 4.50),  -- 北岭大学图书馆
+    (8000, 'South Valley Digital Library', 2.10),  -- 南谷数字图书馆
+    (30000, 'Downtown Archives Library', 5.00),  -- 市中心档案图书馆
+    (20000, 'Heritage Collection Library', 4.75),  -- 遗产收藏图书馆
+    (12000, 'Sunset Hills Public Library', 3.00),  -- 日落山公共图书馆
+    (9000, 'Lakeview Research Library', 4.25),  -- 湖景研究图书馆
+    (17000, 'Riverside Kids Library', 1.75);   -- 河畔儿童图书馆

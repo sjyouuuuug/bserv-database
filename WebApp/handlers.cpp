@@ -82,6 +82,24 @@ bserv::db_relation_to_object orm_likes_books{
 	bserv::make_db_field<int>("inventory"),
 	bserv::make_db_field<int>("like_count")};
 
+bserv::db_relation_to_object orm_comments{
+	bserv::make_db_field<int>("id"),
+	bserv::make_db_field<std::string>("user_id"),
+	bserv::make_db_field<std::string>("ISBN"),
+	bserv::make_db_field<std::string>("comment_time"),
+	bserv::make_db_field<std::string>("comment_content")};
+
+bserv::db_relation_to_object orm_comments_books{
+	bserv::make_db_field<std::string>("ISBN"),
+	bserv::make_db_field<std::string>("title"),
+	bserv::make_db_field<std::string>("comment_text")};
+
+bserv::db_relation_to_object orm_libraries{
+	bserv::make_db_field<int>("id"),
+	bserv::make_db_field<std::string>("total_collection"),
+	bserv::make_db_field<float>("social_prestige_per_book"),
+	bserv::make_db_field<std::string>("library_name")};
+
 std::optional<boost::json::object> get_user(
 	bserv::db_transaction &tx,
 	const boost::json::string &username)
@@ -99,7 +117,7 @@ std::optional<boost::json::object> get_book(
 	bserv::db_result r = tx.exec(
 		"select * from books where ISBN = ?", ISBN);
 	lginfo << r.query(); // this is how you log info
-	return orm_user.convert_to_optional(r);
+	return orm_books.convert_to_optional(r);
 }
 
 std::string get_or_empty(
@@ -205,50 +223,6 @@ boost::json::object user_register(
 		{"message", "user registered"}};
 }
 
-// if you return a json object, the serialization
-// is performed automatically.
-boost::json::object comment_register(
-	bserv::request_type &request,
-	// the json object is obtained from the request body,
-	// as well as the url parameters
-	boost::json::object &&params,
-	std::shared_ptr<bserv::db_connection> conn)
-{
-	if (request.method() != boost::beast::http::verb::post)
-	{
-		throw bserv::url_not_found_exception{};
-	}
-	if (params.count("username") == 0)
-	{
-		return {
-			{"success", false},
-			{"message", "`username` is required"}};
-	}
-	if (params.count("ISBN") == 0)
-	{
-		return {
-			{"success", false},
-			{"message", "`ISBN` is required"}};
-	}
-	auto username = params["username"].as_string();
-	bserv::db_transaction tx{conn};
-
-	bserv::db_result r = tx.exec(
-		"insert into ? "
-		"(user_id, ISBN, comment_time, comment_content) values "
-		"(?, ?, ?, ?)",
-		bserv::db_name("comments"),
-		get_or_empty(params, "userid"),
-		get_or_empty(params, "ISBN"),
-		get_current_time_as_string(),
-		get_or_empty(params, "comment_content"));
-	lginfo << r.query();
-	tx.commit(); // you must manually commit changes
-	return {
-		{"success", true},
-		{"message", "comment added"}};
-}
-
 boost::json::object book_register(
 	bserv::request_type &request,
 	// the json object is obtained from the request body,
@@ -290,6 +264,12 @@ boost::json::object book_register(
 			{"success", false},
 			{"message", "`price` is required"}};
 	}
+	if (params.count("retail_price") == 0)
+	{
+		return {
+			{"success", false},
+			{"message", "`retail_price` is required"}};
+	}
 	if (params.count("quantity") == 0)
 	{
 		return {
@@ -318,15 +298,16 @@ boost::json::object book_register(
 
 	bserv::db_result r = tx.exec(
 		"insert into ? "
-		"(ISBN, title, author, publisher, price, inventory) values "
-		"(?, ?, ?, ?, ?, ?)",
+		"(ISBN, title, author, publisher, price, inventory, retail_price) values "
+		"(?, ?, ?, ?, ?, ?, ?)",
 		bserv::db_name("books"),
 		get_or_empty(params, "ISBN"),
 		get_or_empty(params, "title"),
 		get_or_empty(params, "author"),
 		get_or_empty(params, "publisher"),
 		get_or_empty(params, "price"),
-		get_or_empty(params, "quantity"));
+		get_or_empty(params, "quantity"),
+		get_or_empty(params, "retail_price"));
 
 	std::string cur_time = get_current_time_as_string();
 	bserv::db_result r2 = tx.exec(
@@ -800,6 +781,80 @@ std::nullopt_t redirect_to_sale(
 	return index("sale.html", session_ptr, response, context);
 }
 
+std::nullopt_t redirect_to_libraries(
+	std::shared_ptr<bserv::db_connection> conn,
+	std::shared_ptr<bserv::session_type> session_ptr,
+	bserv::response_type &response,
+	int page_id,
+	boost::json::object &&context)
+{
+	lgdebug << "view orders: " << page_id << std::endl;
+	bserv::db_transaction tx{conn};
+	bserv::db_result db_res = tx.exec("select count(*) from libraries;");
+	lginfo << db_res.query();
+	std::size_t total_users = (*db_res.begin())[0].as<std::size_t>();
+	lgdebug << "total libraries: " << total_users << std::endl;
+	int total_pages = (int)total_users / 10;
+	if (total_users % 10 != 0)
+		++total_pages;
+	lgdebug << "total pages: " << total_pages << std::endl;
+	db_res = tx.exec("select * from libraries limit 10 offset ?;", (page_id - 1) * 10);
+	lginfo << db_res.query();
+	auto libraries = orm_libraries.convert_to_vector(db_res);
+	boost::json::array json_users;
+	for (auto &library : libraries)
+	{
+		json_users.push_back(library);
+	}
+	boost::json::object pagination;
+	if (total_pages != 0)
+	{
+		pagination["total"] = total_pages;
+		if (page_id > 1)
+		{
+			pagination["previous"] = page_id - 1;
+		}
+		if (page_id < total_pages)
+		{
+			pagination["next"] = page_id + 1;
+		}
+		int lower = page_id - 3;
+		int upper = page_id + 3;
+		if (page_id - 3 > 2)
+		{
+			pagination["left_ellipsis"] = true;
+		}
+		else
+		{
+			lower = 1;
+		}
+		if (page_id + 3 < total_pages - 1)
+		{
+			pagination["right_ellipsis"] = true;
+		}
+		else
+		{
+			upper = total_pages;
+		}
+		pagination["current"] = page_id;
+		boost::json::array pages_left;
+		for (int i = lower; i < page_id; ++i)
+		{
+			pages_left.push_back(i);
+		}
+		pagination["pages_left"] = pages_left;
+		boost::json::array pages_right;
+		for (int i = page_id + 1; i <= upper; ++i)
+		{
+			pages_right.push_back(i);
+		}
+		pagination["pages_right"] = pages_right;
+		context["pagination"] = pagination;
+	}
+	context["libraries"] = json_users;
+	return index("libraries.html", session_ptr, response, context);
+}
+
 std::nullopt_t redirect_to_books(
 	std::shared_ptr<bserv::db_connection> conn,
 	std::shared_ptr<bserv::session_type> session_ptr,
@@ -891,15 +946,15 @@ std::nullopt_t redirect_to_comments(
 	if (total_users % 10 != 0)
 		++total_pages;
 	lgdebug << "total pages: " << total_pages << std::endl;
-	db_res = tx.exec("SELECT b.ISBN AS ISBN, b.title AS title, b.author, b.publisher, b.retail_price, b.inventory, COUNT(l.id) AS like_count "
+	db_res = tx.exec("SELECT b.ISBN, b.title, COALESCE(string_agg(c.comment_content, '; '), 'No comments') AS comment_text "
 					 "FROM books b "
-					 "LEFT JOIN likes l ON b.ISBN = l.ISBN "
+					 "LEFT JOIN comments c ON b.ISBN = c.ISBN "
 					 "GROUP BY b.ISBN, b.title "
 					 "ORDER BY b.ISBN ASC "
-					 "LIMIT 10 OFFSET ?;",
+					 "limit 10 offset ?;",
 					 (page_id - 1) * 10);
 	lginfo << db_res.query();
-	auto comments = orm_likes_books.convert_to_vector(db_res);
+	auto comments = orm_comments_books.convert_to_vector(db_res);
 	boost::json::array json_users;
 	for (auto &comment : comments)
 	{
@@ -1068,6 +1123,17 @@ std::nullopt_t view_sale(
 	return redirect_to_sale(conn, session_ptr, response, page_id, std::move(context));
 }
 
+std::nullopt_t view_libraries(
+	std::shared_ptr<bserv::db_connection> conn,
+	std::shared_ptr<bserv::session_type> session_ptr,
+	bserv::response_type &response,
+	const std::string &page_num)
+{
+	int page_id = std::stoi(page_num);
+	boost::json::object context;
+	return redirect_to_libraries(conn, session_ptr, response, page_id, std::move(context));
+}
+
 std::nullopt_t view_books(
 	std::shared_ptr<bserv::db_connection> conn,
 	std::shared_ptr<bserv::session_type> session_ptr,
@@ -1110,17 +1176,6 @@ std::nullopt_t form_add_user(
 {
 	boost::json::object context = user_register(request, std::move(params), conn);
 	return redirect_to_users(conn, session_ptr, response, 1, std::move(context));
-}
-
-std::nullopt_t form_add_comment(
-	bserv::request_type &request,
-	bserv::response_type &response,
-	boost::json::object &&params,
-	std::shared_ptr<bserv::db_connection> conn,
-	std::shared_ptr<bserv::session_type> session_ptr)
-{
-	boost::json::object context = comment_register(request, std::move(params), conn);
-	return redirect_to_comments(conn, session_ptr, response, 1, std::move(context));
 }
 
 std::nullopt_t form_add_book(
@@ -1353,6 +1408,66 @@ boost::json::object book_restock(
 		{"message", "book restocked"}};
 }
 
+boost::json::object comment_add(
+	bserv::request_type &request,
+	boost::json::object &&params,
+	std::shared_ptr<bserv::db_connection> conn)
+{
+	if (request.method() != boost::beast::http::verb::post)
+	{
+		throw bserv::url_not_found_exception{};
+	}
+
+	if (params.count("ISBN") == 0)
+	{
+		return {
+			{"success", false},
+			{"message", "`ISBN` is required"}};
+	}
+	if (params.count("comment") == 0)
+	{
+		return {
+			{"success", false},
+			{"message", "`comment` cannot be empty"}};
+	}
+	if (params.count("userid") == 0)
+	{
+		return {
+			{"success", false},
+			{"message", "`userid` is required"}};
+	}
+
+	auto ISBN = params["ISBN"].as_string();
+	bserv::db_transaction tx{conn};
+
+	auto bk = get_book(tx, ISBN);
+	lginfo << bk.value();
+	if (!bk.has_value())
+	{
+		return {
+			{"success", false},
+			{"message", "book does not exist"}};
+	}
+
+	std::string cur_time = get_current_time_as_string();
+
+	bserv::db_result r2 = tx.exec(
+		"insert into ? "
+		"(user_id, ISBN, comment_time, comment_content) values "
+		"(?, ?, ?, ?) ",
+		bserv::db_name("comments"),
+		get_or_empty(params, "userid"),
+		get_or_empty(params, "ISBN"),
+		cur_time,
+		get_or_empty(params, "comment"));
+
+	lginfo << r2.query();
+	tx.commit(); // you must manually commit changes
+	return {
+		{"success", true},
+		{"message", "comment added"}};
+}
+
 std::nullopt_t delete_book(
 	bserv::request_type &request,
 	bserv::response_type &response,
@@ -1395,6 +1510,17 @@ std::nullopt_t restock_book(
 {
 	boost::json::object context = book_restock(request, std::move(params), conn);
 	return redirect_to_books(conn, session_ptr, response, 1, std::move(context));
+}
+
+std::nullopt_t add_new_comments(
+	bserv::request_type &request,
+	bserv::response_type &response,
+	boost::json::object &&params,
+	std::shared_ptr<bserv::db_connection> conn,
+	std::shared_ptr<bserv::session_type> session_ptr)
+{
+	boost::json::object context = comment_add(request, std::move(params), conn);
+	return redirect_to_comments(conn, session_ptr, response, 1, std::move(context));
 }
 
 std::nullopt_t redirect_to_search(
@@ -1498,13 +1624,18 @@ std::nullopt_t redirect_to_search_bookstore(
 		++total_pages;
 	lgdebug << "total pages: " << total_pages << std::endl;
 
-	db_res = tx.exec(
-		"select * from books where title like ? order by ISBN ASC limit 10 offset ? ;",
-		"%" + search_str + "%",
-		(page_id - 1) * 10);
+	db_res = tx.exec("SELECT b.ISBN AS ISBN, b.title AS title, b.author, b.publisher, b.retail_price, b.inventory, COUNT(l.id) AS like_count "
+					 "FROM books b "
+					 "LEFT JOIN likes l ON b.ISBN = l.ISBN "
+					 "WHERE title LIKE ? "
+					 "GROUP BY b.ISBN, b.title "
+					 "ORDER BY b.ISBN ASC "
+					 "LIMIT 10 OFFSET ?;",
+					 "%" + search_str + "%",
+					 (page_id - 1) * 10);
 
 	lginfo << db_res.query();
-	auto lists = orm_books.convert_to_vector(db_res);
+	auto lists = orm_likes_books.convert_to_vector(db_res);
 	boost::json::array json_lists;
 	for (auto &list : lists)
 	{
@@ -1559,6 +1690,92 @@ std::nullopt_t redirect_to_search_bookstore(
 	return index("bookstore.html", session_ptr, response, context);
 }
 
+std::nullopt_t redirect_to_search_comments(
+	std::shared_ptr<bserv::db_connection> conn,
+	std::shared_ptr<bserv::session_type> session_ptr,
+	bserv::response_type &response,
+	int page_id,
+	boost::json::object &&context,
+	boost::json::object &&params)
+{
+	lgdebug << "view users: " << page_id << std::endl;
+	auto search_str = boost::json::value_to<std::string>(params.at("search"));
+	bserv::db_transaction tx{conn};
+	bserv::db_result db_res = tx.exec("select count(*) from books where title like ?;", "%" + search_str + "%");
+	lginfo << db_res.query();
+	std::size_t total_users = (*db_res.begin())[0].as<std::size_t>();
+	lgdebug << "total users: " << total_users << std::endl;
+	int total_pages = (int)total_users / 10;
+	if (total_users % 10 != 0)
+		++total_pages;
+	lgdebug << "total pages: " << total_pages << std::endl;
+
+	db_res = tx.exec("SELECT b.ISBN, b.title, COALESCE(string_agg(c.comment_content, '; '), 'No comments') AS comment_text "
+					 "FROM books b "
+					 "LEFT JOIN comments c ON b.ISBN = c.ISBN "
+					 "WHERE title LIKE ? "
+					 "GROUP BY b.ISBN, b.title "
+					 "ORDER BY b.ISBN ASC "
+					 "limit 10 offset ?;",
+					 "%" + search_str + "%",
+					 (page_id - 1) * 10);
+
+	lginfo << db_res.query();
+	auto lists = orm_comments_books.convert_to_vector(db_res);
+	boost::json::array json_lists;
+	for (auto &list : lists)
+	{
+		json_lists.push_back(list);
+	}
+	boost::json::object pagination;
+	if (total_pages != 0)
+	{
+		pagination["total"] = total_pages;
+		if (page_id > 1)
+		{
+			pagination["previous"] = page_id - 1;
+		}
+		if (page_id < total_pages)
+		{
+			pagination["next"] = page_id + 1;
+		}
+		int lower = page_id - 3;
+		int upper = page_id + 3;
+		if (page_id - 3 > 2)
+		{
+			pagination["left_ellipsis"] = true;
+		}
+		else
+		{
+			lower = 1;
+		}
+		if (page_id + 3 < total_pages - 1)
+		{
+			pagination["right_ellipsis"] = true;
+		}
+		else
+		{
+			upper = total_pages;
+		}
+		pagination["current"] = page_id;
+		boost::json::array pages_left;
+		for (int i = lower; i < page_id; ++i)
+		{
+			pages_left.push_back(i);
+		}
+		pagination["pages_left"] = pages_left;
+		boost::json::array pages_right;
+		for (int i = page_id + 1; i <= upper; ++i)
+		{
+			pages_right.push_back(i);
+		}
+		pagination["pages_right"] = pages_right;
+		context["pagination"] = pagination;
+	}
+	context["comments"] = json_lists;
+	return index("comments.html", session_ptr, response, context);
+}
+
 std::nullopt_t view_search(
 	std::shared_ptr<bserv::db_connection> conn,
 	std::shared_ptr<bserv::session_type> session_ptr,
@@ -1581,4 +1798,16 @@ std::nullopt_t view_search_bookstore(
 	int page_id = std::stoi(page_num);
 	boost::json::object context;
 	return redirect_to_search_bookstore(conn, session_ptr, response, page_id, std::move(context), std::move(params));
+}
+
+std::nullopt_t view_search_comments(
+	std::shared_ptr<bserv::db_connection> conn,
+	std::shared_ptr<bserv::session_type> session_ptr,
+	bserv::response_type &response,
+	boost::json::object &&params,
+	const std::string &page_num)
+{
+	int page_id = std::stoi(page_num);
+	boost::json::object context;
+	return redirect_to_search_comments(conn, session_ptr, response, page_id, std::move(context), std::move(params));
 }

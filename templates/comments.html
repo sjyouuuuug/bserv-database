@@ -8,7 +8,7 @@
 
 <table>
   <td>  
-  <form action="/books/search" method="post">
+  <form action="/comments/search" method="post">
       <input type="text" name="search" id="search" placeholder="Search">
       <button type="submit" class="btn btn-secondary">Search</button>
     </form>
@@ -20,8 +20,9 @@
     <tr>
       <th scope="col">#</th>
       <th scope="col">ISBN</th>
-      <th scope="col">title</th>
-      <th scope="col">likes</th>
+      <th scope="col">Title</th>
+      <th scope="col">Comments</th>
+      <th scope="col">Actions</th>
     </tr>
   </thead>
   <tbody>
@@ -30,11 +31,57 @@
       <th scope="row">{{ loop.index1 }}</th>
       <td>{{ comment.ISBN }}</td>
       <td>{{ comment.title }}</td>
-      <td>{{ comment.like_count }}</td>
+      <td>{{ comment.comment_text }}</td>
+      {% if exists("user") %}
+      <td>
+        <input type="hidden" name="ISBN" value="{{ comment.ISBN }}">
+        <input type="hidden" name="userid" value="{{ user.id }}">
+        <button class="btn btn-warning" type="button" data-toggle="modal" data-target="#restockModal" onclick="openRestockModal('{{ comment.ISBN }}')">Add new comment</button>
+      </td>
+      {% else %}
+      <td><button class="btn btn-primary" type="button" disabled>No Permission</button></td>
+      {% endif %}
     </tr>
     {% endfor %}
   </tbody>
 </table>
+
+<!-- Restock Modal -->
+<div id="restockModal" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add New Comment</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form action="/add_new_comments" method="POST">
+        <div class="modal-body">
+          <input type="hidden" name="ISBN" id="ISBN">
+          {% if exists("user") %}
+          <input type="hidden" name="userid" value="{{ user.id }}">
+          {% endif %}
+          <div class="form-group">
+            <label for="comment">Comments</label>
+            <input type="text" class="form-control" name="comment" id="comment">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Submit</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function openRestockModal(isbn) {
+  document.getElementById('ISBN').value = isbn;
+}
+</script>
+
 
 <!-- Bootstrap Modal Scripts (Ensure jQuery is included) -->
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
