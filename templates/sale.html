@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}sale{% endblock %}
+
+{% block sale_active %}active{% endblock %}
+
+{% block content %}
+
+<head>
+    <meta charset="UTF-8">
+    <title>Button Example</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+</head>
+<body>
+    <table>
+        <tr>
+            <td>  
+                <form action="/sale/check" method="post">
+                    <button type="submit" class="btn btn-secondary">Check Income And Expenditure</button>
+                </form>
+            </td>
+        </tr>
+    </table>
+</body>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">Buyer</th>
+      <th scope="col">ISBN</th>
+      <th scope="col">time</th>
+      <th scope="col">quantity</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for sale in sales %}
+    <tr style="vertical-align: middle;">
+      <th scope="row">{{ loop.index1 }}</th>
+      <td>{{ sale.user_id }}</td>
+      <td>{{ sale.ISBN }}</td>
+      <td>{{ sale.sale_time }}</td>
+      <td>{{ sale.sale_quantity }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+
+{% if exists("pagination") %}
+<ul class="pagination">
+  {% if existsIn(pagination, "previous") %}
+  <li class="page-item">
+    <a class="page-link" href="/sale/{{ pagintaion.previous }}" aria-label="Previous">
+      <span aria-hidden="true">&laquo;</span>
+    </a>
+  </li>
+  {% else %}
+  <li class="page-item disabled">
+    <a class="page-link" href="#" aria-label="Previous">
+      <span aria-hidden="true">&laquo;</span>
+    </a>
+  </li>
+  {% endif %}
+  {% if existsIn(pagination, "left_ellipsis") %}
+  <li class="page-item"><a class="page-link" href="/sale/1">1</a></li>
+  <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+  {% endif %}
+  {% for page in pagination.pages_left %}
+  <li class="page-item"><a class="page-link" href="/sale/{{ page }}">{{ page }}</a></li>
+  {% endfor %}
+  <li class="page-item active" aria-current="page"><a class="page-link" href="/sale/{{ pagination.current }}">{{ pagination.current }}</a></li>
+  {% for page in pagination.pages_right %}
+  <li class="page-item"><a class="page-link" href="/sale/{{ page }}">{{ page }}</a></li>
+  {% endfor %}
+  {% if existsIn(pagination, "right_ellipsis") %}
+  <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+  <li class="page-item"><a class="page-link" href="/sale/{{ pagination.total }}">{{ pagination.total }}</a></li>
+  {% endif %}
+  {% if existsIn(pagination, "next") %}
+  <li class="page-item">
+    <a class="page-link" href="/sale/{{ pagination.next }}" aria-label="Next">
+      <span aria-hidden="true">&raquo;</span>
+    </a>
+  </li>
+  {% else %}
+  <li class="page-item disabled">
+    <a class="page-link" href="#" aria-label="Next">
+      <span aria-hidden="true">&raquo;</span>
+    </a>
+  </li>
+  {% endif %}
+</ul>
+{% endif %}
+{% endblock %}

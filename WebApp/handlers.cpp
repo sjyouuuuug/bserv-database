@@ -4,6 +4,7 @@
 #include <ctime>
 #include <sstream>
 #include <iomanip>
+#include <unordered_map>
 
 #include "rendering.h"
 
@@ -75,6 +76,10 @@ bserv::db_relation_to_object orm_likes{
 bserv::db_relation_to_object orm_likes_books{
 	bserv::make_db_field<std::string>("ISBN"),
 	bserv::make_db_field<std::string>("title"),
+	bserv::make_db_field<std::string>("author"),
+	bserv::make_db_field<std::string>("publisher"),
+	bserv::make_db_field<float>("retail_price"),
+	bserv::make_db_field<int>("inventory"),
 	bserv::make_db_field<int>("like_count")};
 
 std::optional<boost::json::object> get_user(
@@ -198,6 +203,50 @@ boost::json::object user_register(
 	return {
 		{"success", true},
 		{"message", "user registered"}};
+}
+
+// if you return a json object, the serialization
+// is performed automatically.
+boost::json::object comment_register(
+	bserv::request_type &request,
+	// the json object is obtained from the request body,
+	// as well as the url parameters
+	boost::json::object &&params,
+	std::shared_ptr<bserv::db_connection> conn)
+{
+	if (request.method() != boost::beast::http::verb::post)
+	{
+		throw bserv::url_not_found_exception{};
+	}
+	if (params.count("username") == 0)
+	{
+		return {
+			{"success", false},
+			{"message", "`username` is required"}};
+	}
+	if (params.count("ISBN") == 0)
+	{
+		return {
+			{"success", false},
+			{"message", "`ISBN` is required"}};
+	}
+	auto username = params["username"].as_string();
+	bserv::db_transaction tx{conn};
+
+	bserv::db_result r = tx.exec(
+		"insert into ? "
+		"(user_id, ISBN, comment_time, comment_content) values "
+		"(?, ?, ?, ?)",
+		bserv::db_name("comments"),
+		get_or_empty(params, "userid"),
+		get_or_empty(params, "ISBN"),
+		get_current_time_as_string(),
+		get_or_empty(params, "comment_content"));
+	lginfo << r.query();
+	tx.commit(); // you must manually commit changes
+	return {
+		{"success", true},
+		{"message", "comment added"}};
 }
 
 boost::json::object book_register(
@@ -842,13 +891,13 @@ std::nullopt_t redirect_to_comments(
 	if (total_users % 10 != 0)
 		++total_pages;
 	lgdebug << "total pages: " << total_pages << std::endl;
-	db_res = tx.exec("SELECT b.ISBN AS ISBN, b.title AS title, COUNT(l.id) AS like_count "
-					"FROM books b "
-					"LEFT JOIN likes l ON b.ISBN = l.ISBN "
-					"GROUP BY b.ISBN, b.title "
-					"ORDER BY b.ISBN ASC "
-					"LIMIT 10 OFFSET ?;",
-					(page_id - 1) * 10);
+	db_res = tx.exec("SELECT b.ISBN AS ISBN, b.title AS title, b.author, b.publisher, b.retail_price, b.inventory, COUNT(l.id) AS like_count "
+					 "FROM books b "
+					 "LEFT JOIN likes l ON b.ISBN = l.ISBN "
+					 "GROUP BY b.ISBN, b.title "
+					 "ORDER BY b.ISBN ASC "
+					 "LIMIT 10 OFFSET ?;",
+					 (page_id - 1) * 10);
 	lginfo << db_res.query();
 	auto comments = orm_likes_books.convert_to_vector(db_res);
 	boost::json::array json_users;
@@ -922,9 +971,16 @@ std::nullopt_t redirect_to_bookstore(
 	if (total_users % 10 != 0)
 		++total_pages;
 	lgdebug << "total pages: " << total_pages << std::endl;
-	db_res = tx.exec("select * from books order by ISBN ASC limit 10 offset ?;", (page_id - 1) * 10);
+	db_res = tx.exec("SELECT b.ISBN AS ISBN, b.title AS title, b.author, b.publisher, b.retail_price, b.inventory, COUNT(l.id) AS like_count "
+					 "FROM books b "
+					 "LEFT JOIN likes l ON b.ISBN = l.ISBN "
+					 "GROUP BY b.ISBN, b.title "
+					 "ORDER BY b.ISBN ASC "
+					 "LIMIT 10 OFFSET ?;",
+					 (page_id - 1) * 10);
+
 	lginfo << db_res.query();
-	auto books = orm_books.convert_to_vector(db_res);
+	auto books = orm_likes_books.convert_to_vector(db_res);
 	boost::json::array json_users;
 	for (auto &book : books)
 	{
@@ -1056,6 +1112,17 @@ std::nullopt_t form_add_user(
 	return redirect_to_users(conn, session_ptr, response, 1, std::move(context));
 }
 
+std::nullopt_t form_add_comment(
+	bserv::request_type &request,
+	bserv::response_type &response,
+	boost::json::object &&params,
+	std::shared_ptr<bserv::db_connection> conn,
+	std::shared_ptr<bserv::session_type> session_ptr)
+{
+	boost::json::object context = comment_register(request, std::move(params), conn);
+	return redirect_to_comments(conn, session_ptr, response, 1, std::move(context));
+}
+
 std::nullopt_t form_add_book(
 	bserv::request_type &request,
 	bserv::response_type &response,
@@ -1156,8 +1223,7 @@ boost::json::object like_hit(
 		bserv::db_name("likes"),
 		get_or_empty(params, "userid"),
 		get_or_empty(params, "ISBN"),
-		cur_time
-	);
+		cur_time);
 
 	lginfo << r.query();
 	tx.commit(); // you must manually commit changes
@@ -1306,7 +1372,7 @@ std::nullopt_t hit_like(
 	std::shared_ptr<bserv::session_type> session_ptr)
 {
 	boost::json::object context = like_hit(request, std::move(params), conn);
-	return redirect_to_comments(conn, session_ptr, response, 1, std::move(context));
+	return redirect_to_bookstore(conn, session_ptr, response, 1, std::move(context));
 }
 
 std::nullopt_t purchase_book(

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}comments{% endblock %}
+
+{% block comments_active %}active{% endblock %}
+
+{% block content %}
+
+<table>
+  <td>  
+  <form action="/books/search" method="post">
+      <input type="text" name="search" id="search" placeholder="Search">
+      <button type="submit" class="btn btn-secondary">Search</button>
+    </form>
+  </td>
+</table>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">ISBN</th>
+      <th scope="col">title</th>
+      <th scope="col">likes</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for comment in comments %}
+    <tr style="vertical-align: middle;">
+      <th scope="row">{{ loop.index1 }}</th>
+      <td>{{ comment.ISBN }}</td>
+      <td>{{ comment.title }}</td>
+      <td>{{ comment.like_count }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Bootstrap Modal Scripts (Ensure jQuery is included) -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+
+
+
+{% if exists("pagination") %}
+<ul class="pagination">
+  {% if existsIn(pagination, "previous") %}
+  <li class="page-item">
+    <a class="page-link" href="/comments/{{ pagination.previous }}" aria-label="Previous">
+      <span aria-hidden="true">&laquo;</span>
+    </a>
+  </li>
+  {% else %}
+  <li class="page-item disabled">
+    <a class="page-link" href="#" aria-label="Previous">
+      <span aria-hidden="true">&laquo;</span>
+    </a>
+  </li>
+  {% endif %}
+  {% if existsIn(pagination, "left_ellipsis") %}
+  <li class="page-item"><a class="page-link" href="/comments/1">1</a></li>
+  <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+  {% endif %}
+  {% for page in pagination.pages_left %}
+  <li class="page-item"><a class="page-link" href="/comments/{{ page }}">{{ page }}</a></li>
+  {% endfor %}
+  <li class="page-item active" aria-current="page"><a class="page-link" href="/comments/{{ pagination.current }}">{{ pagination.current }}</a></li>
+  {% for page in pagination.pages_right %}
+  <li class="page-item"><a class="page-link" href="/comments/{{ page }}">{{ page }}</a></li>
+  {% endfor %}
+  {% if existsIn(pagination, "right_ellipsis") %}
+  <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+  <li class="page-item"><a class="page-link" href="/comments/{{ pagination.total }}">{{ pagination.total }}</a></li>
+  {% endif %}
+  {% if existsIn(pagination, "next") %}
+  <li class="page-item">
+    <a class="page-link" href="/comments/{{ pagination.next }}" aria-label="Next">
+      <span aria-hidden="true">&raquo;</span>
+    </a>
+  </li>
+  {% else %}
+  <li class="page-item disabled">
+    <a class="page-link" href="#" aria-label="Next">
+      <span aria-hidden="true">&raquo;</span>
+    </a>
+  </li>
+  {% endif %}
+</ul>
+{% endif %}
+{% endblock %}

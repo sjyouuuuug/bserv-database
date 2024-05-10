@@ -125,6 +125,13 @@ std::nullopt_t form_add_order(
     std::shared_ptr<bserv::db_connection> conn,
     std::shared_ptr<bserv::session_type> session_ptr);
 
+std::nullopt_t form_add_comment(
+    bserv::request_type& request,
+    bserv::response_type& response,
+    boost::json::object&& params,
+    std::shared_ptr<bserv::db_connection> conn,
+    std::shared_ptr<bserv::session_type> session_ptr);
+
 std::nullopt_t delete_book(
     bserv::request_type& request,
     bserv::response_type& response,

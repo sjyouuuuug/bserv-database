@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}bookstore{% endblock %}
+
+{% block bookstore_active %}active{% endblock %}
+
+{% block content %}
+<!-- Button trigger modal -->
+
+<table>
+  <td>  
+  <form action="/bookstore/search" method="post">
+      <input type="text" name="search" id="search" placeholder="Search">
+      <button type="submit" class="btn btn-secondary">Search</button>
+    </form>
+  </td>
+</table>
+
+<!-- Likes Table -->
+<table class="table">
+  <thead>
+      <tr>
+          <th scope="col">#</th>
+          <th scope="col">title</th>
+          <th scope="col">author</th>
+          <th scope="col">publisher</th>
+          <th scope="col">Inventory</th>
+          <th scope="col">Actions</th>
+          <th scope="col">Likes</th>
+      </tr>
+  </thead>
+  <tbody>
+      {% for book in books %}
+      <tr style="vertical-align: middle;">
+          <th scope="row">{{ loop.index1 }}</th>
+          <td>{{ book.title }}</td>
+          <td>{{ book.author }}</td>
+          <td>{{ book.publisher }}</td>
+          <td id="inventory-{{ book.ISBN }}">{{ book.inventory }}</td>
+          {% if exists("user") %}
+          <td>
+            <form action="/hit_like" method="POST" style="display: inline;">
+              <input type="hidden" name="ISBN" value="{{ book.ISBN }}">
+              <input type="hidden" name="userid" value="{{ user.id }}">
+              <button class="btn btn-danger" type="submit">
+                <i class="fas fa-heart"></i>
+              </button>
+            </form>
+            <form action="/purchase_book" method="POST" onsubmit="return confirmAndCheckInventory('{{ book.title }}', '{{ book.ISBN }}');" style="display: inline;">
+                <input type="hidden" name="ISBN" value="{{ book.ISBN }}">
+                <input type="hidden" name="userid" value="{{ user.id }}">
+                <button class="btn btn-primary" type="submit">Purchase</button>
+                <div class="form-group">
+                    <label for="quantity-{{ book.ISBN }}">Quantity</label>
+                    <input type="number" class="form-control" name="quantity" id="quantity-{{ book.ISBN }}" required min="1">
+                </div>
+            </form>
+          </td>
+          {% else %}
+          <td><button class="btn btn-primary" type="button" disabled>No Permission</button></td>
+          {% endif %}
+          <td>{{ book.like_count }}</td>
+      </tr>
+      {% endfor %}
+  </tbody>
+</table>
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+<script>
+    function confirmPurchase(bookTitle) {
+    return confirm("Are you sure you want to purchase the book \"" + bookTitle + "\"?");
+    }
+
+    function confirmAndCheckInventory(bookTitle, isbn) {
+    var inventory = parseInt(document.getElementById('inventory-' + isbn).innerText, 10);
+    var quantityInput = document.getElementById('quantity-' + isbn);
+    var quantity = parseInt(quantityInput.value, 10);
+
+    if (quantity > inventory) {
+        alert('Insufficient stock for "' + bookTitle + '". Please wait for a restock or reduce the quantity you wish to purchase.');
+        return false;
+    }
+
+    return confirmPurchase(bookTitle);
+    }
+</script>
+  
+
+<!-- Bootstrap Modal Scripts (Ensure jQuery is included) -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+
+
+
+{% if exists("pagination") %}
+<ul class="pagination">
+  {% if existsIn(pagination, "previous") %}
+  <li class="page-item">
+    <a class="page-link" href="/bookstore/{{ pagination.previous }}" aria-label="Previous">
+      <span aria-hidden="true">&laquo;</span>
+    </a>
+  </li>
+  {% else %}
+  <li class="page-item disabled">
+    <a class="page-link" href="#" aria-label="Previous">
+      <span aria-hidden="true">&laquo;</span>
+    </a>
+  </li>
+  {% endif %}
+  {% if existsIn(pagination, "left_ellipsis") %}
+  <li class="page-item"><a class="page-link" href="/bookstore/1">1</a></li>
+  <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+  {% endif %}
+  {% for page in pagination.pages_left %}
+  <li class="page-item"><a class="page-link" href="/bookstore/{{ page }}">{{ page }}</a></li>
+  {% endfor %}
+  <li class="page-item active" aria-current="page"><a class="page-link" href="/bookstore/{{ pagination.current }}">{{ pagination.current }}</a></li>
+  {% for page in pagination.pages_right %}
+  <li class="page-item"><a class="page-link" href="/bookstore/{{ page }}">{{ page }}</a></li>
+  {% endfor %}
+  {% if existsIn(pagination, "right_ellipsis") %}
+  <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+  <li class="page-item"><a class="page-link" href="/bookstore/{{ pagination.total }}">{{ pagination.total }}</a></li>
+  {% endif %}
+  {% if existsIn(pagination, "next") %}
+  <li class="page-item">
+    <a class="page-link" href="/bookstore/{{ pagination.next }}" aria-label="Next">
+      <span aria-hidden="true">&raquo;</span>
+    </a>
+  </li>
+  {% else %}
+  <li class="page-item disabled">
+    <a class="page-link" href="#" aria-label="Next">
+      <span aria-hidden="true">&raquo;</span>
+    </a>
+  </li>
+  {% endif %}
+</ul>
+{% endif %}
+{% endblock %}
