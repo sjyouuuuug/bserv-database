@@ -94,18 +94,18 @@
           <td>{{ user.email }}</td>
           <td>
             {% if user.sex == "male" %}
-            <span><i class="fas fa-mars text-primary"></i> Male</span>
+            <span class="badge badge-primary"><i class="fas fa-mars"></i> Male</span>
             {% else if user.sex == "female" %}
-            <span><i class="fas fa-venus text-pink"></i> Female</span>
+            <span class="badge badge-danger"><i class="fas fa-venus"></i> Female</span>
             {% else %}
-            <span><i class="fas fa-helicopter text-success"></i> Other</span>
+            <span class="badge badge-secondary"><i class="fas fa-helicopter"></i> Other</span>
             {% endif %}
           </td>
           <td>
             {% if user.is_superuser %}
-            <span><i class="fas fa-crown text-warning"></i> Admin</span>
+            <span class="badge badge-warning"><i class="fas fa-crown"></i> Admin</span>
             {% else %}
-            <span>User</span>
+            <span class="badge badge-secondary"><i class="fas fa-user"></i> User</span>
             {% endif %}
           </td>
         </tr>
@@ -172,6 +172,6 @@
 
 <!-- jQuery and Bootstrap Bundle -->
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-<script src="https://stackpath.amazonaws.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
 
 {% endblock %}
