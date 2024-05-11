@@ -5,27 +5,27 @@
 {% block home_active %}active{% endblock %}
 
 {% block content %}
-<div class="p-5 mb-4 bg-light rounded-3">
+<div class="p-5 mb-4 bg-light rounded-3 shadow-sm">
   <div class="container-fluid py-5">
-    <h1 class="display-5 fw-bold">Welcome to WebApp Bookstore</h1>
+    <h1 class="display-5 fw-bold text-primary">Welcome to Bookstore</h1>
     <p class="col-md-8 fs-4">Discover your next great read among thousands of books in our collection. From timeless classics to the latest bestsellers, we have something for everyone.</p>
   </div>
 </div>
 
 <div class="row align-items-md-stretch">
-  <div class="col-md-6">
-    <div class="h-100 p-5 text-white bg-dark rounded-3">
+  <div class="col-md-6 mb-3">
+    <div class="h-100 p-5 text-white bg-dark rounded-3 shadow-sm">
       <h2>Featured Books</h2>
       <ul>
         <li>The Catcher in the Rye - J.D. Salinger</li>
         <li>To Kill a Mockingbird - Harper Lee</li>
         <li>1984 - George Orwell</li>
       </ul>
-      <a class="btn btn-outline-light" href="/bookstore" role="button">Shop Now</a>
+      <a class="btn btn-outline-light mt-3" href="/bookstore" role="button">Shop Now</a>
     </div>
   </div>  
-  <div class="col-md-6">
-    <div id="quotesCarousel" class="carousel slide bg-light border rounded-3 h-100 p-5" data-bs-ride="carousel">
+  <div class="col-md-6 mb-3">
+    <div id="quotesCarousel" class="carousel slide bg-grey border rounded-3 h-100 p-5 shadow-sm" data-bs-ride="carousel">
       <h2>Inspirational Quotes</h2>
       <div class="carousel-inner">
         <div class="carousel-item active">
@@ -63,33 +63,42 @@
       </button>
     </div>
   </div>
-  
-  <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      var myCarousel = new bootstrap.Carousel(document.getElementById("quotesCarousel"), {
-        interval: 5000, // 5 seconds
-        ride: 'carousel'
-      });
-
-      document.addEventListener("click", function() {
-        myCarousel.next();
-      });
-    });
-  </script>  
 </div>
 
-<div class="p-5 my-4 bg-secondary text-white rounded-3">
-  <div class="container-fluid py-5">
-    <h2 class="display-6">Customer Reviews</h2>
-    <blockquote class="blockquote">
-      <p>"WebApp Bookstore has the best selection and the most helpful staff!"</p>
-      <footer class="blockquote-footer text-light">Sarah Thompson</footer>
-    </blockquote>
-    <blockquote class="blockquote">
-      <p>"I found my favorite book at an unbeatable price. Highly recommend!"</p>
-      <footer class="blockquote-footer text-light">James Peterson</footer>
-    </blockquote>
-    <a class="btn btn-outline-light" href="/comments" role="button">View more</a>
+<div class="row align-items-md-stretch mb-3">
+  <div class="col-md-6">
+    <div class="h-100 p-5 text-white bg-info rounded-3 shadow-sm">
+      <h2>Customer Reviews</h2>
+      <blockquote class="blockquote">
+        <p>"WebApp Bookstore has the best selection and the most helpful staff!"</p>
+        <footer class="blockquote-footer text-light">Sarah Thompson</footer>
+      </blockquote>
+      <blockquote class="blockquote">
+        <p>"I found my favorite book at an unbeatable price. Highly recommend!"</p>
+        <footer class="blockquote-footer text-light">James Peterson</footer>
+      </blockquote>
+      <a class="btn btn-outline-light mt-3" href="/comments" role="button">View More</a>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="h-100 p-5 text-white bg-secondary rounded-3 shadow-sm">
+      <h2>Latest Arrivals</h2>
+      <ul>
+        <li>A Promised Land - Barack Obama</li>
+        <li>The Midnight Library - Matt Haig</li>
+        <li>The Vanishing Half - Brit Bennett</li>
+      </ul>
+      <a class="btn btn-outline-light mt-3" href="/bookstore" role="button">Explore Now</a>
+    </div>
   </div>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    var myCarousel = new bootstrap.Carousel(document.getElementById("quotesCarousel"), {
+      interval: 5000, // 5 seconds
+      ride: 'carousel'
+    });
+  });
+</script>  
 {% endblock %}
